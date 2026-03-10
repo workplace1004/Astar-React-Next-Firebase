@@ -2,6 +2,7 @@ import React from "react";
 import { Bell, UserPlus, CreditCard, HelpCircle, FileText, Check, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useMemo } from "react";
 import EmptyState from "@/components/EmptyState";
+import { getPaginationItems } from "@/lib/pagination";
 
 type NotifItem = { id: number; icon: React.ComponentType<{ className?: string }>; title: string; desc: string; time: string; date: string; unread: boolean; category: string };
 
@@ -89,9 +90,13 @@ const AdminNotifications = () => {
           </p>
           <div className="flex items-center gap-1">
             <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronLeft className="w-4 h-4" /></button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button key={page} onClick={() => goToPage(page)} className={`w-8 h-8 rounded-lg text-sm transition-colors ${page === currentPage ? "bg-primary/10 text-primary border border-primary/20 font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"}`}>{page}</button>
-            ))}
+            {getPaginationItems(totalPages, currentPage).map((item, i) =>
+              item === "ellipsis" ? (
+                <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-muted-foreground text-sm">…</span>
+              ) : (
+                <button key={item} onClick={() => goToPage(item)} className={`w-8 h-8 rounded-lg text-sm transition-colors ${item === currentPage ? "bg-primary/10 text-primary border border-primary/20 font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"}`}>{item}</button>
+              )
+            )}
             <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronRight className="w-4 h-4" /></button>
           </div>
         </div>

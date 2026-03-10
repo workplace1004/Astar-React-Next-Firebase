@@ -1,20 +1,38 @@
 import { motion } from "framer-motion";
-import { CreditCard, Search, ChevronLeft, ChevronRight } from "lucide-react";
-import { useState, useMemo } from "react";
+import { CreditCard, Search, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import EmptyState from "@/components/EmptyState";
+import { adminGetOrders, type AdminOrderItem } from "@/lib/api";
+import { getPaginationItems } from "@/lib/pagination";
 
 const ITEMS_PER_PAGE = 10;
 
+function formatDate(iso: string) {
+  try {
+    return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+  } catch {
+    return iso;
+  }
+}
+
 const AdminOrders = () => {
-  const [orders] = useState<{ id: string; user: string; type: string; amount: string; method: string; date: string }[]>([]);
+  const [orders, setOrders] = useState<AdminOrderItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    adminGetOrders()
+      .then(setOrders)
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = useMemo(
     () =>
       orders.filter(
         (o) =>
           o.user.toLowerCase().includes(search.toLowerCase()) ||
+          o.userEmail.toLowerCase().includes(search.toLowerCase()) ||
           o.id.toLowerCase().includes(search.toLowerCase()) ||
           o.type.toLowerCase().includes(search.toLowerCase())
       ),
@@ -28,13 +46,32 @@ const AdminOrders = () => {
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
+  const mainMethod = useMemo(() => {
+    const counts: Record<string, number> = {};
+    orders.forEach((o) => {
+      counts[o.method] = (counts[o.method] || 0) + 1;
+    });
+    const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    return entries[0]?.[0] ?? "—";
+  }, [orders]);
+
+  const totalIncome = useMemo(() => {
+    let sum = 0;
+    orders.forEach((o) => {
+      const match = o.amount.replace(/[^0-9.]/g, "");
+      const n = parseFloat(match);
+      if (!Number.isNaN(n)) sum += n;
+    });
+    return sum > 0 ? `${sum.toFixed(0)} USD` : "—";
+  }, [orders]);
+
   return (
     <div className="max-w-5xl mx-auto">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {[
-          { label: "Ingresos (período)", value: "—" },
+          { label: "Ingresos (período)", value: totalIncome },
           { label: "Total Pedidos", value: String(orders.length) },
-          { label: "Método Principal", value: "—" },
+          { label: "Método Principal", value: mainMethod },
         ].map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="glass-card rounded-2xl p-6 premium-shadow text-center">
             <p className="font-sans text-2xl text-foreground tabular-nums">{s.value}</p>
@@ -49,50 +86,61 @@ const AdminOrders = () => {
       </div>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="glass-card rounded-2xl premium-shadow overflow-hidden">
-        <table className="w-full text-sm">
-          <thead><tr className="border-b border-border/30"><th className="text-left p-4 text-muted-foreground font-normal">ID</th><th className="text-left p-4 text-muted-foreground font-normal">Usuario</th><th className="text-left p-4 text-muted-foreground font-normal">Tipo</th><th className="text-left p-4 text-muted-foreground font-normal">Monto</th><th className="text-left p-4 text-muted-foreground font-normal">Método</th><th className="text-left p-4 text-muted-foreground font-normal">Fecha</th></tr></thead>
-          <tbody>
-            {paginated.map((o) => (
-              <tr key={o.id} className="border-b border-border/20 hover:bg-accent/30 transition-colors">
-                <td className="p-4 text-muted-foreground">{o.id}</td>
-                <td className="p-4 text-foreground">{o.user}</td>
-                <td className="p-4 text-muted-foreground">{o.type}</td>
-                <td className="p-4 text-primary font-sans tabular-nums">{o.amount}</td>
-                <td className="p-4 text-muted-foreground">{o.method}</td>
-                <td className="p-4 text-muted-foreground">{o.date}</td>
-              </tr>
-            ))}
-            {paginated.length === 0 && (
-              <tr>
-                <td colSpan={6} className="p-0">
-                  <EmptyState icon={CreditCard} message="No hay pedidos." />
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </motion.div>
-
-      {totalPages > 1 && filtered.length > 0 && (
-        <div className="flex items-center justify-between mt-6">
-          <p className="text-xs text-muted-foreground">
-            Mostrando {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} de {filtered.length}
-          </p>
-          <div className="flex items-center gap-1">
-            <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button key={page} onClick={() => goToPage(page)} className={`w-8 h-8 rounded-lg text-sm transition-colors ${page === currentPage ? "bg-primary/10 text-primary border border-primary/20 font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"}`}>
-                {page}
-              </button>
-            ))}
-            <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-              <ChevronRight className="w-4 h-4" />
-            </button>
+        {loading ? (
+          <div className="flex items-center justify-center py-16 text-muted-foreground">
+            <Loader2 className="w-8 h-8 animate-spin" />
           </div>
-        </div>
-      )}
+        ) : (
+          <>
+            <table className="w-full text-sm">
+              <thead><tr className="border-b border-border/30"><th className="text-left p-4 text-muted-foreground font-normal">ID</th><th className="text-left p-4 text-muted-foreground font-normal">Usuario</th><th className="text-left p-4 text-muted-foreground font-normal">Tipo</th><th className="text-left p-4 text-muted-foreground font-normal">Monto</th><th className="text-left p-4 text-muted-foreground font-normal">Método</th><th className="text-left p-4 text-muted-foreground font-normal">Fecha</th></tr></thead>
+              <tbody>
+                {paginated.map((o) => (
+                  <tr key={o.id} className="border-b border-border/20 hover:bg-accent/30 transition-colors">
+                    <td className="p-4 text-muted-foreground font-mono text-xs">{o.id.slice(0, 8)}…</td>
+                    <td className="p-4 text-foreground">{o.user}</td>
+                    <td className="p-4 text-muted-foreground">{o.type}</td>
+                    <td className="p-4 text-primary font-sans tabular-nums">{o.amount}</td>
+                    <td className="p-4 text-muted-foreground">{o.method}</td>
+                    <td className="p-4 text-muted-foreground">{formatDate(o.date)}</td>
+                  </tr>
+                ))}
+                {paginated.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="p-0">
+                      <EmptyState icon={CreditCard} message="No hay pedidos." />
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+            {totalPages > 1 && filtered.length > 0 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t border-border/20">
+                <p className="text-xs text-muted-foreground">
+                  Mostrando {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} de {filtered.length}
+                </p>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  {getPaginationItems(totalPages, currentPage).map((item, i) =>
+                    item === "ellipsis" ? (
+                      <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-muted-foreground text-sm">…</span>
+                    ) : (
+                      <button key={item} onClick={() => goToPage(item)} className={`w-8 h-8 rounded-lg text-sm transition-colors ${item === currentPage ? "bg-primary/10 text-primary border border-primary/20 font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"}`}>
+                        {item}
+                      </button>
+                    )
+                  )}
+                  <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </motion.div>
     </div>
   );
 };

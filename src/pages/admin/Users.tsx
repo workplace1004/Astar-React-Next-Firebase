@@ -4,6 +4,7 @@ import { Users, Search, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react";
 import { adminGetUsers, type AdminUserListItem } from "@/lib/api";
 import EmptyState from "@/components/EmptyState";
+import { getPaginationItems } from "@/lib/pagination";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -152,19 +153,23 @@ const AdminUsers = () => {
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            {Array.from({ length: data.totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => goToPage(page)}
-                className={`w-8 h-8 rounded-lg text-sm transition-colors ${
-                  page === currentPage
-                    ? "bg-primary/10 text-primary border border-primary/20 font-medium"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                }`}
-              >
-                {page}
-              </button>
-            ))}
+            {getPaginationItems(data.totalPages, currentPage).map((item, i) =>
+              item === "ellipsis" ? (
+                <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-muted-foreground text-sm">…</span>
+              ) : (
+                <button
+                  key={item}
+                  onClick={() => goToPage(item)}
+                  className={`w-8 h-8 rounded-lg text-sm transition-colors ${
+                    item === currentPage
+                      ? "bg-primary/10 text-primary border border-primary/20 font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                  }`}
+                >
+                  {item}
+                </button>
+              )
+            )}
             <button
               onClick={() => goToPage(currentPage + 1)}
               disabled={currentPage === data.totalPages}

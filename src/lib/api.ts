@@ -146,6 +146,97 @@ export async function adminGetStats(): Promise<AdminStats> {
   return res.json();
 }
 
+export interface AdminOrderItem {
+  id: string;
+  user: string;
+  userEmail: string;
+  type: string;
+  amount: string;
+  method: string;
+  date: string;
+}
+
+export async function adminGetOrders(): Promise<AdminOrderItem[]> {
+  const res = await fetch(`${API_BASE}/admin/orders`, { headers: authHeaders() });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export interface AdminBlogPostItem {
+  id: string;
+  title: string;
+  status: string;
+  date: string;
+  content: string;
+}
+
+export async function adminGetBlogPosts(): Promise<AdminBlogPostItem[]> {
+  const res = await fetch(`${API_BASE}/admin/blog`, { headers: authHeaders() });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export interface AdminKnowledgeCategory {
+  id: string;
+  title: string;
+  entries: { id: string; content: string }[];
+}
+
+export async function adminGetKnowledgeBase(): Promise<AdminKnowledgeCategory[]> {
+  const res = await fetch(`${API_BASE}/admin/knowledge-base`, { headers: authHeaders() });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export interface AdminQuestionItem {
+  id: string;
+  user: string;
+  userEmail: string;
+  question: string;
+  answer: string | null;
+  status: string;
+  date: string;
+}
+
+export async function adminGetQuestions(): Promise<AdminQuestionItem[]> {
+  const res = await fetch(`${API_BASE}/admin/questions`, { headers: authHeaders() });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function adminGetQuestion(id: string): Promise<AdminQuestionItem | null> {
+  const res = await fetch(`${API_BASE}/admin/questions/${id}`, { headers: authHeaders() });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function adminUpdateQuestionAnswer(id: string, answer: string): Promise<AdminQuestionItem | null> {
+  const res = await fetch(`${API_BASE}/admin/questions/${id}`, {
+    method: "PATCH",
+    headers: { ...authHeaders(), "Content-Type": "application/json" },
+    body: JSON.stringify({ answer: answer.trim() }),
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export interface AdminReportItem {
+  id: string;
+  user: string;
+  userEmail: string;
+  type: string;
+  title: string;
+  status: string;
+  date: string;
+  content: string | null;
+}
+
+export async function adminGetReports(): Promise<AdminReportItem[]> {
+  const res = await fetch(`${API_BASE}/admin/reports`, { headers: authHeaders() });
+  if (!res.ok) return [];
+  return res.json();
+}
+
 // ——— Portal API (client, requires auth) ———
 
 export interface PortalProfile {

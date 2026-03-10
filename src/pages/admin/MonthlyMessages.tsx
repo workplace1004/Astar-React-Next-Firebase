@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Send, User, Mail, Search, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { adminGetUsers, type AdminUserListItem } from "@/lib/api";
 import EmptyState from "@/components/EmptyState";
+import { getPaginationItems } from "@/lib/pagination";
 
 const ITEMS_PER_PAGE = 8;
 
@@ -127,17 +128,21 @@ const AdminMonthlyMessages = () => {
                     >
                       <ChevronLeft className="w-3.5 h-3.5" />
                     </button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <button
-                        key={page}
-                        onClick={() => goToPage(page)}
-                        className={`w-7 h-7 rounded-lg text-xs transition-colors ${
-                          page === currentPage ? "bg-primary/10 text-primary border border-primary/20 font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ))}
+                    {getPaginationItems(totalPages, currentPage).map((item, i) =>
+                      item === "ellipsis" ? (
+                        <span key={`ellipsis-${i}`} className="w-7 h-7 flex items-center justify-center text-muted-foreground text-xs">…</span>
+                      ) : (
+                        <button
+                          key={item}
+                          onClick={() => goToPage(item)}
+                          className={`w-7 h-7 rounded-lg text-xs transition-colors ${
+                            item === currentPage ? "bg-primary/10 text-primary border border-primary/20 font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      )
+                    )}
                     <button
                       onClick={() => goToPage(currentPage + 1)}
                       disabled={currentPage === totalPages}

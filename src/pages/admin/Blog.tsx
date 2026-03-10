@@ -1,7 +1,9 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useMemo } from "react";
-import { Plus, Edit, Trash2, Eye, X, Search, ChevronLeft, ChevronRight, FileText } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Plus, Edit, Trash2, Eye, X, Search, ChevronLeft, ChevronRight, FileText, Loader2 } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
+import { adminGetBlogPosts } from "@/lib/api";
+import { getPaginationItems } from "@/lib/pagination";
 
 type PostItem = { id: string; title: string; status: string; date: string; content: string };
 
@@ -9,14 +11,38 @@ type ModalType = "new" | "view" | "edit" | "delete" | null;
 
 const ITEMS_PER_PAGE = 10;
 
+function formatDate(iso: string) {
+  try {
+    return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+  } catch {
+    return iso;
+  }
+}
+
 const AdminBlog = () => {
   const [posts, setPosts] = useState<PostItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<ModalType>(null);
   const [selectedPost, setSelectedPost] = useState<PostItem | null>(null);
   const [formTitle, setFormTitle] = useState("");
   const [formContent, setFormContent] = useState("");
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    adminGetBlogPosts().then((data) => {
+      setPosts(
+        data.map((p) => ({
+          id: p.id,
+          title: p.title,
+          status: p.status === "published" ? "Publicado" : p.status === "draft" ? "Borrador" : p.status,
+          date: formatDate(p.date),
+          content: p.content,
+        }))
+      );
+      setLoading(false);
+    });
+  }, []);
 
   const filtered = useMemo(() =>
     posts.filter((p) =>
@@ -124,6 +150,11 @@ const AdminBlog = () => {
       </AnimatePresence>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="glass-card rounded-2xl premium-shadow overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center py-16 text-muted-foreground">
+            <Loader2 className="w-8 h-8 animate-spin" />
+          </div>
+        ) : (
         <table className="w-full text-sm">
           <thead><tr className="border-b border-border/30"><th className="text-left p-4 text-muted-foreground font-normal">Título</th><th className="text-left p-4 text-muted-foreground font-normal">Estado</th><th className="text-left p-4 text-muted-foreground font-normal">Fecha</th><th className="p-4 text-muted-foreground font-normal">Acciones</th></tr></thead>
           <tbody>
@@ -148,6 +179,7 @@ const AdminBlog = () => {
             )}
           </tbody>
         </table>
+        )}
       </motion.div>
 
       {totalPages > 1 && filtered.length > 0 && (
@@ -157,9 +189,13 @@ const AdminBlog = () => {
           </p>
           <div className="flex items-center gap-1">
             <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronLeft className="w-4 h-4" /></button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button key={page} onClick={() => goToPage(page)} className={`w-8 h-8 rounded-lg text-sm transition-colors ${page === currentPage ? "bg-primary/10 text-primary border border-primary/20 font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"}`}>{page}</button>
-            ))}
+            {getPaginationItems(totalPages, currentPage).map((item, i) =>
+              item === "ellipsis" ? (
+                <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-muted-foreground text-sm">…</span>
+              ) : (
+                <button key={item} onClick={() => goToPage(item)} className={`w-8 h-8 rounded-lg text-sm transition-colors ${item === currentPage ? "bg-primary/10 text-primary border border-primary/20 font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"}`}>{item}</button>
+              )
+            )}
             <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronRight className="w-4 h-4" /></button>
           </div>
         </div>
