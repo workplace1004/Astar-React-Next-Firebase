@@ -237,6 +237,31 @@ export async function adminGetReports(): Promise<AdminReportItem[]> {
   return res.json();
 }
 
+export interface AdminConversationMessage {
+  id: string;
+  type: string;
+  content: string;
+  monthLabel: string | null;
+  createdAt: string;
+  fromAdmin: boolean;
+}
+
+export async function adminGetConversation(userId: string): Promise<AdminConversationMessage[]> {
+  const res = await fetch(`${API_BASE}/admin/messages/${encodeURIComponent(userId)}`, { headers: authHeaders() });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function adminSendMessage(userId: string, content: string): Promise<AdminConversationMessage | null> {
+  const res = await fetch(`${API_BASE}/admin/messages`, {
+    method: "POST",
+    headers: { ...authHeaders(), "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, content: content.trim() }),
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
 // ——— Portal API (client, requires auth) ———
 
 export interface PortalProfile {

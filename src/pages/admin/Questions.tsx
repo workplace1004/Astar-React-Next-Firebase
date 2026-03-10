@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { HelpCircle, Search, ChevronLeft, ChevronRight, Loader2, Eye, X } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import EmptyState from "@/components/EmptyState";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { adminGetQuestions, type AdminQuestionItem } from "@/lib/api";
 import { getPaginationItems } from "@/lib/pagination";
 
@@ -134,20 +135,23 @@ const AdminQuestions = () => {
             className="w-full pl-11 pr-4 py-3 rounded-xl bg-background/50 border border-border/50 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 text-sm"
           />
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value);
+        <Select
+          value={statusFilter === "" ? "all" : statusFilter}
+          onValueChange={(v) => {
+            setStatusFilter(v === "all" ? "" : v);
             setCurrentPage(1);
           }}
-          className="px-4 py-3 rounded-xl bg-background/50 border border-border/50 text-foreground text-sm focus:outline-none focus:border-primary/50 min-w-[180px]"
         >
-          {STATUS_OPTIONS.map((opt) => (
-            <option key={opt.value || "all"} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="min-w-[180px] h-[46px] rounded-xl bg-background/50 border-border/50 focus:ring-primary/20">
+            <SelectValue placeholder="Todos los estados" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los estados</SelectItem>
+            <SelectItem value="new">Nueva</SelectItem>
+            <SelectItem value="waiting">En espera</SelectItem>
+            <SelectItem value="answered">Respondida</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <motion.div
