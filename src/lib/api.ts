@@ -68,6 +68,29 @@ function authHeaders(): HeadersInit {
   };
 }
 
+// ——— Public: birth chart preview (no auth) ———
+
+export interface BirthChartPreviewResult {
+  sun: { sign: string; symbol: string; description: string };
+  moon: { sign: string; symbol: string; description: string };
+  ascendant: { sign: string; symbol: string; description: string };
+}
+
+export async function apiBirthChartPreview(data: {
+  birthDate: string;
+  birthTime: string;
+  birthPlace: string;
+}): Promise<BirthChartPreviewResult> {
+  const res = await fetch(`${API_BASE}/birth-chart/preview`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((body as { message?: string }).message ?? "No se pudo calcular la carta");
+  return body as BirthChartPreviewResult;
+}
+
 export async function apiUpdateProfile(data: { name?: string; email?: string }): Promise<ApiUser> {
   const res = await fetch(`${API_BASE}/auth/me`, {
     method: "PATCH",

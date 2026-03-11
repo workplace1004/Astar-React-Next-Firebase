@@ -7,6 +7,7 @@ import { useTheme } from "next-themes";
 import ThemeToggle from "./ThemeToggle";
 
 const navLinks = [
+  { to: "/", label: "Preview Carta", hash: "#preview-carta" },
   { to: "/about", label: "Sobre Nosotros" },
   { to: "/manifesto", label: "Manifiesto" },
   { to: "/blog", label: "Blog" },
@@ -43,13 +44,29 @@ const Navbar = () => {
         </Link>
         <div className="hidden lg:flex items-center gap-6 text-sm tracking-wide">
           {navLinks.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              className="relative text-muted-foreground hover:text-foreground transition-colors after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-px after:bottom-[-4px] after:left-0 after:bg-primary after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left"
-            >
-              {link.label}
-            </Link>
+            "hash" in link && link.hash ? (
+              <a
+                key={link.to + link.hash}
+                href={link.to + link.hash}
+                onClick={(e) => {
+                  if (window.location.pathname === link.to) {
+                    e.preventDefault();
+                    document.getElementById(link.hash.slice(1))?.scrollIntoView({ behavior: "smooth" });
+                  }
+                }}
+                className="relative text-muted-foreground hover:text-foreground transition-colors after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-px after:bottom-[-4px] after:left-0 after:bg-primary after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left"
+              >
+                {link.label}
+              </a>
+            ) : (
+              <Link
+                key={link.to}
+                to={link.to}
+                className="relative text-muted-foreground hover:text-foreground transition-colors after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-px after:bottom-[-4px] after:left-0 after:bg-primary after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left"
+              >
+                {link.label}
+              </Link>
+            )
           ))}
         </div>
         <div className="flex items-center gap-3">
@@ -75,9 +92,26 @@ const Navbar = () => {
         >
           <div className="flex flex-col gap-4">
             {navLinks.map((link) => (
-              <Link key={link.to} to={link.to} onClick={() => setMenuOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors text-sm py-2">
-                {link.label}
-              </Link>
+              "hash" in link && link.hash ? (
+                <a
+                  key={link.to + link.hash}
+                  href={link.to + link.hash}
+                  onClick={(e) => {
+                    setMenuOpen(false);
+                    if (window.location.pathname === link.to) {
+                      e.preventDefault();
+                      document.getElementById(link.hash.slice(1))?.scrollIntoView({ behavior: "smooth" });
+                    }
+                  }}
+                  className="text-muted-foreground hover:text-foreground transition-colors text-sm py-2"
+                >
+                  {link.label}
+                </a>
+              ) : (
+                <Link key={link.to} to={link.to} onClick={() => setMenuOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors text-sm py-2">
+                  {link.label}
+                </Link>
+              )
             ))}
             <button onClick={() => { handleCTA(); setMenuOpen(false); }} className="text-sm px-5 py-2.5 rounded-full shimmer-gold text-primary-foreground font-medium tracking-wide mt-2">
               {isAuthenticated ? "Mi Portal" : "Comenzar"}

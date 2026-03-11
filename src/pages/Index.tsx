@@ -1,6 +1,7 @@
 import Navbar from "@/components/landing/Navbar";
 import HeroSection from "@/components/landing/HeroSection";
 import StatsBar from "@/components/landing/StatsBar";
+import BirthChartPreview from "@/components/landing/BirthChartPreview";
 import HowItWorks from "@/components/landing/HowItWorks";
 import PortalPreview from "@/components/landing/PortalPreview";
 import AccompanimentSection from "@/components/landing/AccompanimentSection";
@@ -24,6 +25,7 @@ const Index = () => {
         <Navbar />
         <HeroSection />
         <StatsBar />
+        <BirthChartPreview />
         <HowItWorks />
         <PortalPreview />
         <AccompanimentSection />
