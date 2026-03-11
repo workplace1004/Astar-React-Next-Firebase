@@ -68,9 +68,9 @@ const BirthChartPreview = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
           onSubmit={handleSubmit}
-          className="max-w-md mx-auto mb-12"
+          className="max-w-xl mx-auto mb-12"
         >
-          <div className="grid sm:grid-cols-3 gap-4 mb-4">
+          <div className="grid sm:grid-cols-3 gap-10 mb-4">
             <div>
               <label htmlFor="birthDate" className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Fecha de nacimiento
@@ -81,7 +81,7 @@ const BirthChartPreview = () => {
                     id="birthDate"
                     type="button"
                     className={cn(
-                      "w-full px-4 py-3 rounded-xl bg-background/80 border border-border text-left flex items-center justify-between transition-colors focus:border-primary/50 focus:ring-1 focus:ring-primary/30 outline-none",
+                      "min-w-[150px] px-4 py-3 rounded-xl bg-background/80 border border-border text-base text-left flex items-center justify-between transition-colors focus:border-primary/50 focus:ring-1 focus:ring-primary/30 outline-none",
                       birthDate ? "text-foreground" : "text-muted-foreground"
                     )}
                   >
@@ -117,7 +117,7 @@ const BirthChartPreview = () => {
               <TimePicker
                 value={birthTime || "12:00"}
                 onChange={(v) => setBirthTime(v)}
-                className="w-full bg-background/80 border-border text-foreground"
+                className="w-full bg-background/80 border-border text-foreground text-base"
               />
             </div>
             <div>
@@ -130,7 +130,7 @@ const BirthChartPreview = () => {
                 placeholder="Ciudad, país"
                 value={birthPlace}
                 onChange={(e) => setBirthPlace(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-background/80 border border-border text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+                className="w-full px-4 py-3 rounded-xl bg-background/80 border border-border text-base text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/30 outline-none transition-all"
               />
             </div>
           </div>
