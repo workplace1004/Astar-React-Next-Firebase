@@ -147,7 +147,6 @@ const AdminLayoutContent = () => {
 
   return (
     <div className="min-h-screen bg-gradient-dark flex">
-      <div className="fixed inset-0 bg-noise pointer-events-none z-0" />
 
       {sidebarOpen && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />

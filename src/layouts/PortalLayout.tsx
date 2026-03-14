@@ -146,7 +146,6 @@ const PortalLayoutContent = () => {
 
   return (
     <div className="min-h-screen bg-gradient-dark flex">
-      <div className="fixed inset-0 bg-noise pointer-events-none z-0" />
 
       {/* Mobile overlay */}
       {sidebarOpen && (
@@ -221,7 +220,7 @@ const PortalLayoutContent = () => {
 };
 
 const PortalLayout = () => {
-  const { user, isAuthenticated, authLoading } = useAuth();
+  const { user, isAuthenticated, authLoading, hasActiveSubscription } = useAuth();
 
   if (authLoading) {
     return <LoadingSpinner />;
@@ -229,6 +228,10 @@ const PortalLayout = () => {
 
   if (!isAuthenticated || user?.role === "admin") {
     return <Navigate to="/login" replace />;
+  }
+
+  if (!hasActiveSubscription) {
+    return <Navigate to="/subscribe" replace />;
   }
 
   return (

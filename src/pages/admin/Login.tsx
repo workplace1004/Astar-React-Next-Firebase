@@ -72,7 +72,6 @@ const AdminLogin = () => {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center bg-gradient-dark overflow-hidden">
-      <div className="fixed inset-0 bg-noise pointer-events-none z-0" />
       <Starfield />
       <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 w-full max-w-md mx-6">
         <div className="glass-card rounded-2xl p-10 premium-shadow-lg border border-border/50">

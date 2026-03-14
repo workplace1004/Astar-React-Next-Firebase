@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import ScrollToTop from "@/components/ScrollToTop";
 
 
 // Layouts
@@ -64,6 +65,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <ScrollToTop />
             <Suspense fallback={<LoadingSpinner />}>
               <Routes>
                 {/* Public pages - Landing has its own layout */}

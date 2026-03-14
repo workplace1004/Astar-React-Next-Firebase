@@ -1,10 +1,17 @@
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Check, Shield, Star, Crown } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  paymentConfirmMercadoPagoPayment,
+  paymentConfirmStripeSession,
+  paymentCreateSubscriptionCheckout,
+} from "@/lib/api";
 
 const plans = [
   {
+    id: "essentials" as const,
     name: "Essentials",
     icon: Shield,
     price: { monthly: 19, annual: 15 },
@@ -19,6 +26,7 @@ const plans = [
     ],
   },
   {
+    id: "portal" as const,
     name: "Portal",
     icon: Star,
     price: { monthly: 39, annual: 29 },
@@ -34,6 +42,7 @@ const plans = [
     ],
   },
   {
+    id: "depth" as const,
     name: "Depth",
     icon: Crown,
     price: { monthly: 79, annual: 59 },
@@ -51,7 +60,71 @@ const plans = [
 ];
 
 const Subscribe = () => {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { isAuthenticated, refreshUser } = useAuth();
   const [billing, setBilling] = useState<"monthly" | "annual">("monthly");
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+
+  const paymentStatus = searchParams.get("status");
+  const paymentProvider = searchParams.get("provider");
+  const sessionId = searchParams.get("session_id");
+  const mercadoPagoPaymentId = useMemo(
+    () => searchParams.get("payment_id") ?? searchParams.get("collection_id"),
+    [searchParams],
+  );
+
+  useEffect(() => {
+    const confirm = async () => {
+      if (paymentStatus !== "success") return;
+      try {
+        if (paymentProvider === "stripe" && sessionId) {
+          await paymentConfirmStripeSession(sessionId);
+        } else if (paymentProvider === "mercadopago" && mercadoPagoPaymentId) {
+          await paymentConfirmMercadoPagoPayment(mercadoPagoPaymentId);
+        } else {
+          return;
+        }
+        await refreshUser();
+        setMessage("Pago confirmado. Tu suscripción está activa.");
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "No se pudo confirmar el pago.");
+      } finally {
+        const clean = new URLSearchParams(searchParams);
+        clean.delete("provider");
+        clean.delete("status");
+        clean.delete("session_id");
+        clean.delete("payment_id");
+        clean.delete("collection_id");
+        setSearchParams(clean, { replace: true });
+      }
+    };
+    void confirm();
+  }, [mercadoPagoPaymentId, paymentProvider, paymentStatus, refreshUser, searchParams, sessionId, setSearchParams]);
+
+  const startCheckout = async (planId: "essentials" | "portal" | "depth", provider: "stripe" | "mercadopago") => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+    setProcessingId(`${planId}-${provider}`);
+    setError(null);
+    setMessage(null);
+    try {
+      const { checkoutUrl } = await paymentCreateSubscriptionCheckout({
+        plan: planId,
+        provider,
+        billing,
+      });
+      window.location.assign(checkoutUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo iniciar el pago.");
+      setProcessingId(null);
+    }
+  };
 
   return (
     <section className="py-20 px-6">
@@ -129,16 +202,22 @@ const Subscribe = () => {
               {/* CTA Buttons */}
               <div className="space-y-3 mb-8">
                 <button
+                  onClick={() => void startCheckout(plan.id, "stripe")}
+                  disabled={processingId != null}
                   className={`w-full py-3.5 rounded-xl font-medium tracking-wide text-sm transition-all duration-300 ${
                     plan.highlighted
                       ? "shimmer-gold text-primary-foreground hover:opacity-90 glow-gold"
                       : "shimmer-gold text-primary-foreground hover:opacity-90"
-                  }`}
+                  } disabled:opacity-70`}
                 >
-                  Pagar con Stripe
+                  {processingId === `${plan.id}-stripe` ? "Redirigiendo..." : "Pagar con Stripe (USD)"}
                 </button>
-                <button className="w-full py-3.5 rounded-xl bg-accent border border-border/50 text-foreground font-medium tracking-wide hover:bg-accent/80 transition-colors text-sm">
-                  Pagar con Mercado Pago
+                <button
+                  onClick={() => void startCheckout(plan.id, "mercadopago")}
+                  disabled={processingId != null}
+                  className="w-full py-3.5 rounded-xl bg-accent border border-border/50 text-foreground font-medium tracking-wide hover:bg-accent/80 transition-colors text-sm disabled:opacity-70"
+                >
+                  {processingId === `${plan.id}-mercadopago` ? "Redirigiendo..." : "Pagar con Mercado Pago (ARS)"}
                 </button>
               </div>
 
@@ -157,6 +236,13 @@ const Subscribe = () => {
             </motion.div>
           ))}
         </div>
+
+        {message && (
+          <p className="text-center text-sm text-emerald-400 mb-4">{message}</p>
+        )}
+        {error && (
+          <p className="text-center text-sm text-destructive mb-4">{error}</p>
+        )}
 
         <p className="text-center text-xs text-muted-foreground mb-8">
           Cancela cuando quieras. Sin compromisos.

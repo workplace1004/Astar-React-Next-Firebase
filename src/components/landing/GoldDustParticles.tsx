@@ -81,7 +81,7 @@ const GoldDustParticles = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 pointer-events-none"
+      className="absolute inset-0 pointer-events-none max-h-[500px] max-w-[500px]"
       aria-hidden="true"
     />
   );

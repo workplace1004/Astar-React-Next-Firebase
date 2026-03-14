@@ -6,8 +6,7 @@ import GoldDustParticles from "@/components/landing/GoldDustParticles";
 
 const PublicLayout = () => {
   return (
-    <main className="bg-gradient-dark min-h-screen relative">
-      <div className="fixed inset-0 bg-noise pointer-events-none z-0" />
+    <main className="bg-gradient-dark min-h-screen relative overflow-x-hidden">
       <FloatingOrbs />
       <GoldDustParticles />
       <div className="relative z-10">

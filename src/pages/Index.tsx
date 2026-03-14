@@ -17,8 +17,7 @@ import GoldDustParticles from "@/components/landing/GoldDustParticles";
 
 const Index = () => {
   return (
-    <main className="bg-gradient-dark h-screen overflow-x-hidden relative">
-      <div className="fixed inset-0 bg-noise pointer-events-none z-0" />
+    <main className="bg-gradient-dark h-full overflow-x-hidden relative">
       <FloatingOrbs />
       <GoldDustParticles />
       <div className="relative z-10">

@@ -1,8 +1,16 @@
 import { motion } from "framer-motion";
 import { CreditCard, Calendar, Receipt, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { portalGetProfile, portalGetMyOrders, type PortalProfile, type PortalOrder } from "@/lib/api";
+import {
+  paymentCancelSubscription,
+  paymentCreateSubscriptionCheckout,
+  portalGetMyOrders,
+  portalGetProfile,
+  type PortalOrder,
+  type PortalProfile,
+} from "@/lib/api";
 import EmptyState from "@/components/EmptyState";
+import { useAuth } from "@/contexts/AuthContext";
 
 function formatOrderDate(iso: string) {
   try {
@@ -47,9 +55,12 @@ function nextRenewalFromLastOrder(createdAt: string, type: string) {
 }
 
 const Subscription = () => {
+  const { refreshUser } = useAuth();
   const [profile, setProfile] = useState<PortalProfile | null>(null);
   const [orders, setOrders] = useState<PortalOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([portalGetProfile(), portalGetMyOrders()]).then(([p, o]) => {
@@ -99,13 +110,49 @@ const Subscription = () => {
           </div>
         )}
         <div className="flex gap-3 flex-wrap">
-          <button className="px-6 py-2.5 rounded-xl border border-border/50 text-foreground text-sm hover:bg-accent/50 transition-colors">
-            Actualizar Método de Pago
+          <button
+            onClick={async () => {
+              setActionError(null);
+              setActionLoading(true);
+              try {
+                const checkout = await paymentCreateSubscriptionCheckout({
+                  provider: "stripe",
+                  plan: "portal",
+                  billing: "monthly",
+                });
+                window.location.assign(checkout.checkoutUrl);
+              } catch (err) {
+                setActionError(err instanceof Error ? err.message : "No se pudo iniciar el checkout.");
+                setActionLoading(false);
+              }
+            }}
+            disabled={actionLoading}
+            className="px-6 py-2.5 rounded-xl border border-border/50 text-foreground text-sm hover:bg-accent/50 transition-colors disabled:opacity-70"
+          >
+            {actionLoading ? "Procesando..." : "Renovar / Actualizar pago"}
           </button>
-          <button className="px-6 py-2.5 rounded-xl border border-destructive/30 text-destructive text-sm hover:bg-destructive/10 transition-colors">
+          <button
+            onClick={async () => {
+              setActionError(null);
+              setActionLoading(true);
+              try {
+                await paymentCancelSubscription();
+                await refreshUser();
+                const p = await portalGetProfile();
+                setProfile(p ?? null);
+              } catch (err) {
+                setActionError(err instanceof Error ? err.message : "No se pudo cancelar.");
+              } finally {
+                setActionLoading(false);
+              }
+            }}
+            disabled={actionLoading}
+            className="px-6 py-2.5 rounded-xl border border-destructive/30 text-destructive text-sm hover:bg-destructive/10 transition-colors disabled:opacity-70"
+          >
             Cancelar Suscripción
           </button>
         </div>
+        {actionError && <p className="text-sm text-destructive mt-3">{actionError}</p>}
       </motion.div>
 
       {/* Payment history */}

@@ -489,6 +489,73 @@ export interface PortalNotification {
   createdAt: string;
 }
 
+export interface CheckoutResponse {
+  provider: "stripe" | "mercadopago";
+  checkoutUrl: string;
+  reference: string;
+}
+
+export async function paymentCreateSubscriptionCheckout(input: {
+  provider: "stripe" | "mercadopago";
+  plan: "essentials" | "portal" | "depth";
+  billing: "monthly" | "annual";
+}): Promise<CheckoutResponse> {
+  const res = await fetch(`${API_BASE}/payments/subscription/checkout`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify(input),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data as { message?: string }).message ?? "No se pudo iniciar el checkout");
+  return data as CheckoutResponse;
+}
+
+export async function paymentCreateExtraCheckout(input: {
+  provider: "stripe" | "mercadopago";
+  extraType: "extra_question" | "private_session";
+  quantity?: number;
+}): Promise<CheckoutResponse> {
+  const res = await fetch(`${API_BASE}/payments/extra/checkout`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify(input),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data as { message?: string }).message ?? "No se pudo iniciar el checkout");
+  return data as CheckoutResponse;
+}
+
+export async function paymentConfirmStripeSession(sessionId: string): Promise<{ ok: boolean }> {
+  const res = await fetch(`${API_BASE}/payments/confirm/stripe`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ sessionId }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data as { message?: string }).message ?? "No se pudo confirmar el pago de Stripe");
+  return data as { ok: boolean };
+}
+
+export async function paymentConfirmMercadoPagoPayment(paymentId: string): Promise<{ ok: boolean }> {
+  const res = await fetch(`${API_BASE}/payments/confirm/mercadopago`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ paymentId }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data as { message?: string }).message ?? "No se pudo confirmar el pago de Mercado Pago");
+  return data as { ok: boolean };
+}
+
+export async function paymentCancelSubscription(): Promise<void> {
+  const res = await fetch(`${API_BASE}/payments/subscription/cancel`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data as { message?: string }).message ?? "No se pudo cancelar la suscripción");
+}
+
 export async function portalGetProfile(): Promise<PortalProfile | null> {
   const res = await fetch(`${API_BASE}/portal/me`, { headers: authHeaders() });
   if (!res.ok) return null;

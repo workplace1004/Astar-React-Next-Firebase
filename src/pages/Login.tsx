@@ -52,7 +52,6 @@ const Login = () => {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center bg-gradient-dark overflow-hidden">
-      <div className="fixed inset-0 bg-noise pointer-events-none z-0" />
       <Starfield />
 
       <motion.div

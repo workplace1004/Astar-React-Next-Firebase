@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 
 const FloatingOrbs = () => {
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+    <div className="absolute inset-0 overflow-hidden pointer-events-none " aria-hidden="true">
       {/* Large warm orb top-right */}
       <motion.div
         animate={{
