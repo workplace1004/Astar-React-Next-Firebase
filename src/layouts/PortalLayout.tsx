@@ -146,6 +146,7 @@ const PortalLayoutContent = () => {
 
   return (
     <div className="min-h-screen bg-gradient-dark flex">
+      <div className="fixed inset-0 bg-noise pointer-events-none z-0" />
 
       {/* Mobile overlay */}
       {sidebarOpen && (

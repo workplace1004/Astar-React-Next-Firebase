@@ -10,14 +10,12 @@ const mockPosts = [
   { slug: "casas-astrologicas", title: "Las 12 Casas Astrológicas: Tu Mapa de Vida", excerpt: "Cada casa representa un área de tu experiencia. Desde la identidad hasta la espiritualidad, explóralas todas.", date: "2026-01-05", author: "Astar" },
 ];
 
-const containsNumber = (value: string) => /\d/.test(value);
-
 const Blog = () => {
   return (
     <section className="py-20 px-6">
       <div className="max-w-6xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-          <h1 className="font-serif text-5xl md:text-6xl text-gradient-gold font-semibold mb-4 text-center">Blog</h1>
+          <h1 className="font-serif text-5xl md:text-6xl h-[65px] text-gradient-gold font-semibold mb-4 text-center">Blog</h1>
           <p className="text-center text-muted-foreground mb-16">Reflexiones, guías y conocimiento simbólico.</p>
         </motion.div>
 
@@ -36,7 +34,7 @@ const Blog = () => {
                   <span className="mx-2">·</span>
                   {post.author}
                 </div>
-                <h2 className={`${containsNumber(post.title) ? "  " : "font-serif"} text-2xl text-foreground mb-3 hover:text-primary transition-colors`}>
+                <h2 className="font-sans text-2xl text-foreground mb-3 hover:text-primary transition-colors">
                   {post.title}
                 </h2>
                 <p className="text-muted-foreground leading-relaxed">{post.excerpt}</p>
