@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Sun, Moon, ArrowUpCircle, Loader2, CalendarDays } from "lucide-react";
+import { Sun, Moon, ArrowUpCircle, Loader2, CalendarDays, MapPin } from "lucide-react";
 import { format, parse } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
@@ -9,14 +9,70 @@ import TimePicker from "@/components/ui/time-picker";
 import { cn } from "@/lib/utils";
 import { apiBirthChartPreview, type BirthChartPreviewResult } from "@/lib/api";
 
+interface CitySuggestion {
+  id: string;
+  label: string;
+}
+
 const BirthChartPreview = () => {
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
   const [birthPlace, setBirthPlace] = useState("");
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [cityInput, setCityInput] = useState("");
+  const [citySuggestions, setCitySuggestions] = useState<CitySuggestion[]>([]);
+  const [cityOpen, setCityOpen] = useState(false);
+  const [cityLoading, setCityLoading] = useState(false);
+  const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
   const [result, setResult] = useState<BirthChartPreviewResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const q = cityInput.trim();
+    if (q.length < 2) {
+      setCitySuggestions([]);
+      setCityLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        setCityLoading(true);
+        const params = new URLSearchParams({
+          name: q,
+          count: "8",
+          language: "es",
+          format: "json",
+        });
+        const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?${params.toString()}`, {
+          signal: controller.signal,
+        });
+        const data = await res.json().catch(() => ({}));
+        const list = Array.isArray((data as { results?: unknown[] }).results)
+          ? ((data as { results: Array<{ name?: string; admin1?: string; country?: string; latitude?: number; longitude?: number }> }).results)
+          : [];
+        const mapped = list
+          .filter((item) => typeof item.name === "string" && typeof item.country === "string")
+          .map((item, index) => {
+            const label = `${item.name}${item.admin1 ? `, ${item.admin1}` : ""}, ${item.country}`;
+            const id = `${label}-${item.latitude ?? "na"}-${item.longitude ?? "na"}-${index}`;
+            return { id, label };
+          });
+        setCitySuggestions(mapped);
+      } catch {
+        setCitySuggestions([]);
+      } finally {
+        setCityLoading(false);
+      }
+    }, 350);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [cityInput]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,12 +82,16 @@ const BirthChartPreview = () => {
       setError("Indica tu fecha de nacimiento.");
       return;
     }
+    if (!birthPlace.trim() || !selectedCityId) {
+      setError("Selecciona tu ciudad desde la lista de sugerencias.");
+      return;
+    }
     setLoading(true);
     try {
       const data = await apiBirthChartPreview({
         birthDate: birthDate.trim(),
         birthTime: birthTime.trim() || "12:00",
-        birthPlace: birthPlace.trim() || "No indicado",
+        birthPlace: birthPlace.trim(),
       });
       setResult(data);
     } catch (err) {
@@ -124,14 +184,60 @@ const BirthChartPreview = () => {
               <label htmlFor="birthPlace" className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Lugar de nacimiento
               </label>
-              <input
-                id="birthPlace"
-                type="text"
-                placeholder="Ciudad, país"
-                value={birthPlace}
-                onChange={(e) => setBirthPlace(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-background/80 border border-border text-base text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/30 outline-none transition-all"
-              />
+              <div className="relative">
+                <input
+                  id="birthPlace"
+                  type="text"
+                  placeholder="Buscar ciudad..."
+                  value={cityInput}
+                  onFocus={() => setCityOpen(true)}
+                  onBlur={() => window.setTimeout(() => setCityOpen(false), 120)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setCityInput(value);
+                    setBirthPlace(value);
+                    setSelectedCityId(null);
+                    setCityOpen(true);
+                  }}
+                  className="w-full px-4 py-3 rounded-xl placeholder:text-muted-foreground bg-background/80 border border-border text-base text-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+                />
+                <MapPin className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                {cityOpen && (cityInput.trim().length >= 2 || citySuggestions.length > 0) && (
+                  <div className="absolute z-40 mt-1 w-full rounded-xl border border-border/60 bg-card/95 backdrop-blur-xl shadow-lg overflow-hidden">
+                    {cityLoading ? (
+                      <div className="px-3 py-2 text-sm text-muted-foreground flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Buscando ciudades...
+                      </div>
+                    ) : citySuggestions.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">No hay ciudades para mostrar.</div>
+                    ) : (
+                      <ul className="max-h-56 overflow-y-auto py-1">
+                        {citySuggestions.map((city) => (
+                          <li key={city.id}>
+                            <button
+                              type="button"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
+                                setCityInput(city.label);
+                                setBirthPlace(city.label);
+                                setSelectedCityId(city.id);
+                                setCityOpen(false);
+                              }}
+                              className={cn(
+                                "w-full text-left px-3 py-2 text-sm hover:bg-primary/10 transition-colors",
+                                selectedCityId === city.id ? "bg-primary/15 text-foreground" : "text-muted-foreground"
+                              )}
+                            >
+                              {city.label}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           {error && (
