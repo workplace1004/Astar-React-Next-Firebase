@@ -68,6 +68,11 @@ function authHeaders(): HeadersInit {
   };
 }
 
+function frontendBaseFromWindow(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  return window.location.origin;
+}
+
 // ——— Public: birth chart preview (no auth) ———
 
 export interface BirthChartPreviewResult {
@@ -503,7 +508,7 @@ export async function paymentCreateSubscriptionCheckout(input: {
   const res = await fetch(`${API_BASE}/payments/subscription/checkout`, {
     method: "POST",
     headers: authHeaders(),
-    body: JSON.stringify(input),
+    body: JSON.stringify({ ...input, frontendBase: frontendBaseFromWindow() }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error((data as { message?: string }).message ?? "No se pudo iniciar el checkout");
@@ -518,7 +523,7 @@ export async function paymentCreateExtraCheckout(input: {
   const res = await fetch(`${API_BASE}/payments/extra/checkout`, {
     method: "POST",
     headers: authHeaders(),
-    body: JSON.stringify(input),
+    body: JSON.stringify({ ...input, frontendBase: frontendBaseFromWindow() }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error((data as { message?: string }).message ?? "No se pudo iniciar el checkout");

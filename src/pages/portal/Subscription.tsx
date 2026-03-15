@@ -54,6 +54,12 @@ function nextRenewalFromLastOrder(createdAt: string, type: string) {
   }
 }
 
+function providerFromOrderMethod(method?: string): "stripe" | "mercadopago" {
+  const normalized = method?.toLowerCase() ?? "";
+  if (normalized.includes("mercadopago")) return "mercadopago";
+  return "stripe";
+}
+
 const Subscription = () => {
   const { refreshUser } = useAuth();
   const [profile, setProfile] = useState<PortalProfile | null>(null);
@@ -83,6 +89,7 @@ const Subscription = () => {
   const planLabel = lastOrder ? planLabelFromType(lastOrder.type) : "Plan";
   const planAmount = lastOrder ? formatAmount(lastOrder.amount) : null;
   const nextRenewal = lastOrder && status === "active" ? nextRenewalFromLastOrder(lastOrder.createdAt, lastOrder.type) : null;
+  const preferredProvider = providerFromOrderMethod(lastOrder?.method);
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -115,14 +122,42 @@ const Subscription = () => {
               setActionError(null);
               setActionLoading(true);
               try {
-                const checkout = await paymentCreateSubscriptionCheckout({
-                  provider: "stripe",
+                let checkout = await paymentCreateSubscriptionCheckout({
+                  provider: preferredProvider,
                   plan: "portal",
                   billing: "monthly",
                 });
+
+                // Fallback to Mercado Pago when Stripe is not configured on backend.
+                if (
+                  preferredProvider === "stripe" &&
+                  !checkout.checkoutUrl
+                ) {
+                  checkout = await paymentCreateSubscriptionCheckout({
+                    provider: "mercadopago",
+                    plan: "portal",
+                    billing: "monthly",
+                  });
+                }
                 window.location.assign(checkout.checkoutUrl);
               } catch (err) {
-                setActionError(err instanceof Error ? err.message : "No se pudo iniciar el checkout.");
+                const message = err instanceof Error ? err.message : "No se pudo iniciar el checkout.";
+                if (preferredProvider === "stripe" && message.includes("STRIPE_SECRET_KEY")) {
+                  try {
+                    const fallback = await paymentCreateSubscriptionCheckout({
+                      provider: "mercadopago",
+                      plan: "portal",
+                      billing: "monthly",
+                    });
+                    window.location.assign(fallback.checkoutUrl);
+                    return;
+                  } catch (fallbackErr) {
+                    setActionError(fallbackErr instanceof Error ? fallbackErr.message : "No se pudo iniciar el checkout.");
+                    setActionLoading(false);
+                    return;
+                  }
+                }
+                setActionError(message);
                 setActionLoading(false);
               }
             }}

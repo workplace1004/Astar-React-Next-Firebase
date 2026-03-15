@@ -70,6 +70,7 @@ const Subscribe = () => {
 
   const paymentStatus = searchParams.get("status");
   const paymentProvider = searchParams.get("provider");
+  const paymentReason = searchParams.get("reason");
   const sessionId = searchParams.get("session_id");
   const mercadoPagoPaymentId = useMemo(
     () => searchParams.get("payment_id") ?? searchParams.get("collection_id"),
@@ -78,6 +79,22 @@ const Subscribe = () => {
 
   useEffect(() => {
     const confirm = async () => {
+      if (paymentStatus === "error") {
+        const reasonMessage: Record<string, string> = {
+          missing_stripe_key: "Stripe no está configurado en backend. Configura STRIPE_SECRET_KEY.",
+          missing_mercadopago_token: "Mercado Pago no está configurado en backend. Configura MERCADOPAGO_ACCESS_TOKEN.",
+        };
+        setError(reasonMessage[paymentReason ?? ""] ?? "No se pudo iniciar el checkout.");
+        const clean = new URLSearchParams(searchParams);
+        clean.delete("provider");
+        clean.delete("status");
+        clean.delete("reason");
+        clean.delete("session_id");
+        clean.delete("payment_id");
+        clean.delete("collection_id");
+        setSearchParams(clean, { replace: true });
+        return;
+      }
       if (paymentStatus !== "success") return;
       try {
         if (paymentProvider === "stripe" && sessionId) {
@@ -90,12 +107,14 @@ const Subscribe = () => {
         await refreshUser();
         setMessage("Pago confirmado. Tu suscripción está activa.");
         setError(null);
+        navigate("/portal", { replace: true });
       } catch (err) {
         setError(err instanceof Error ? err.message : "No se pudo confirmar el pago.");
       } finally {
         const clean = new URLSearchParams(searchParams);
         clean.delete("provider");
         clean.delete("status");
+        clean.delete("reason");
         clean.delete("session_id");
         clean.delete("payment_id");
         clean.delete("collection_id");
@@ -103,7 +122,7 @@ const Subscribe = () => {
       }
     };
     void confirm();
-  }, [mercadoPagoPaymentId, paymentProvider, paymentStatus, refreshUser, searchParams, sessionId, setSearchParams]);
+  }, [mercadoPagoPaymentId, navigate, paymentProvider, paymentReason, paymentStatus, refreshUser, searchParams, sessionId, setSearchParams]);
 
   const startCheckout = async (planId: "essentials" | "portal" | "depth", provider: "stripe" | "mercadopago") => {
     if (!isAuthenticated) {
@@ -121,7 +140,15 @@ const Subscribe = () => {
       });
       window.location.assign(checkoutUrl);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo iniciar el pago.");
+      const message = err instanceof Error ? err.message : "No se pudo iniciar el pago.";
+
+      if (message.includes("STRIPE_SECRET_KEY")) {
+        setError("Stripe no está configurado en backend. Configura STRIPE_SECRET_KEY para abrir el checkout de Stripe.");
+      } else if (message.includes("MERCADOPAGO_ACCESS_TOKEN")) {
+        setError("Mercado Pago no está configurado en backend. Configura MERCADOPAGO_ACCESS_TOKEN.");
+      } else {
+        setError(message);
+      }
       setProcessingId(null);
     }
   };
