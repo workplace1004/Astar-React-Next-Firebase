@@ -31,27 +31,32 @@ const AdminProfile = () => {
     if (user) {
       setName(user.name);
       setEmail(user.email);
+      setAvatarUrl(user.avatarUrl ?? null);
     }
-  }, [user?.id, user?.name, user?.email]);
+  }, [user?.uid, user?.name, user?.email, user?.avatarUrl]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      setAvatarUrl(url);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setAvatarUrl(result);
+      };
+      reader.readAsDataURL(file);
       toast.success("Avatar actualizado correctamente");
     }
   };
 
   const handleSave = async () => {
     setSavingProfile(true);
-    const result = await updateProfile({ name: name.trim(), email: email.trim() });
+    const result = await updateProfile({ name: name.trim(), email: email.trim(), avatarUrl: avatarUrl ?? "" });
     setSavingProfile(false);
     if (result.ok) {
       setIsEditing(false);
       toast.success("Perfil actualizado correctamente");
     } else {
-      toast.error(result.error);
+      toast.error("error" in result ? result.error : "No se pudo actualizar el perfil");
     }
   };
 
@@ -84,7 +89,7 @@ const AdminProfile = () => {
       setConfirmPassword("");
       toast.success("Contraseña actualizada correctamente");
     } else {
-      toast.error(result.error);
+      toast.error("error" in result ? result.error : "No se pudo actualizar la contraseña");
     }
   };
 

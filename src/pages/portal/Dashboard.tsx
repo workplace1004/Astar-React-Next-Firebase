@@ -3,27 +3,68 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { LayoutDashboard, FileText, MessageCircle, HelpCircle, ChevronRight, Sun, Moon, Hash, CreditCard, Calendar, Sparkles, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { portalGetReports, portalGetMessages, portalGetProfile } from "@/lib/api";
+import { portalGetReports, portalGetMessages, portalGetMyOrders, portalGetProfile, type PortalOrder } from "@/lib/api";
 import EmptyState from "@/components/EmptyState";
+
+function formatOrderAmount(amount: string) {
+  if (!amount) return null;
+  const match = amount.trim().match(/^([0-9]+(?:\.[0-9]+)?)\s+([A-Za-z]{3})$/);
+  if (!match) return amount;
+  const value = Number(match[1]);
+  const currency = match[2].toUpperCase();
+  if (Number.isNaN(value)) return amount;
+  return `${currency === "USD" ? "$" : ""}${value.toFixed(2)} ${currency}`;
+}
+
+function subscriptionTextFromOrder(order: PortalOrder | null) {
+  if (!order) return { planName: null as string | null, billing: null as string | null };
+  const parts = (order.type ?? "").split(":");
+  if (parts[0] !== "subscription") return { planName: null as string | null, billing: null as string | null };
+  const plan = (parts[1] ?? "").toLowerCase();
+  const billing = (parts[2] ?? "").toLowerCase();
+  const planMap: Record<string, string> = {
+    essentials: "Essentials",
+    portal: "Portal",
+    depth: "Depth",
+  };
+  const billingMap: Record<string, string> = {
+    monthly: "Mensual",
+    annual: "Anual",
+  };
+  return {
+    planName: planMap[plan] ?? null,
+    billing: billingMap[billing] ?? null,
+  };
+}
 
 const PortalDashboard = () => {
   const { user } = useAuth();
-  const [reports, setReports] = useState<{ id: string; type: string; title: string }[]>([]);
+  const [reports, setReports] = useState<{ id: string; type: string; title: string; createdAt?: string }[]>([]);
   const [messages, setMessages] = useState<{ id: string; content: string; createdAt: string }[]>([]);
   const [profile, setProfile] = useState<{ subscriptionStatus: string } | null>(null);
+  const [orders, setOrders] = useState<PortalOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([portalGetReports(), portalGetMessages(), portalGetProfile()])
-      .then(([r, m, p]) => {
+    Promise.all([portalGetReports(), portalGetMessages(), portalGetProfile(), portalGetMyOrders()])
+      .then(([r, m, p, o]) => {
         setReports(r);
         setMessages(m);
         setProfile(p ?? null);
+        setOrders(Array.isArray(o) ? o : []);
       })
       .finally(() => setLoading(false));
   }, []);
 
-  const subscriptionActive = user?.subscriptionStatus === "active";
+  const subscriptionActive = (profile?.subscriptionStatus ?? user?.subscriptionStatus) === "active";
+  const latestSubscriptionOrder = orders.find((o) => (o.type ?? "").startsWith("subscription:")) ?? null;
+  const subscriptionAmount = formatOrderAmount(latestSubscriptionOrder?.amount ?? "");
+  const subscriptionInfo = subscriptionTextFromOrder(latestSubscriptionOrder);
+  const subscriptionLine = subscriptionInfo.planName
+    ? `${subscriptionInfo.planName}${subscriptionInfo.billing ? ` (${subscriptionInfo.billing})` : ""}${subscriptionAmount ? ` — ${subscriptionAmount}` : ""}`
+    : subscriptionAmount
+      ? `Suscripción — ${subscriptionAmount}`
+      : "Sin pagos de suscripción registrados";
   const latestMessage = messages[0];
   const reportTypes = [
     { to: "/portal/reports/birth-chart", icon: Sun, label: "Carta Natal", desc: "Tu estructura simbólica natal" },
@@ -71,10 +112,10 @@ const PortalDashboard = () => {
               </p>
               {subscriptionActive && <span className="w-2 h-2 rounded-full bg-primary animate-pulse-glow" />}
             </div>
-            <p className="text-foreground font-medium">Plan Mensual — $29 USD</p>
+            <p className="text-foreground font-medium">{subscriptionLine}</p>
             <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
               <Calendar className="w-3.5 h-3.5" />
-              Gestiona tu suscripción para ver renovación
+              {subscriptionActive ? "Gestiona tu suscripción para ver renovación" : "Activa o actualiza tu plan desde Suscripción"}
             </div>
           </div>
           <Link to="/portal/subscription" className="text-sm text-primary hover:text-primary/80 transition-colors shrink-0">

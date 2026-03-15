@@ -7,17 +7,20 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import TimePicker from "@/components/ui/time-picker";
-import { portalGetProfile } from "@/lib/api";
+import { apiChangePassword, apiUpdateProfile, portalGetProfile } from "@/lib/api";
 
 const Account = () => {
-  const { user } = useAuth();
-  const [profile, setProfile] = useState<{ birthDate: string | null; birthPlace: string | null; birthTime: string | null } | null>(null);
+  const { user, refreshUser } = useAuth();
+  const [profile, setProfile] = useState<{ birthDate: string | null; birthPlace: string | null; birthTime: string | null; avatarUrl: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [birthDate, setBirthDate] = useState<Date | undefined>(undefined);
   const [form, setForm] = useState({
     name: user?.name || "",
     birthPlace: "",
     birthTime: "00:00",
+    currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
@@ -26,6 +29,7 @@ const Account = () => {
       if (p) {
         setProfile(p);
         setForm((f) => ({ ...f, name: p.name, birthPlace: p.birthPlace || "", birthTime: p.birthTime || "00:00" }));
+        setAvatar(p.avatarUrl ?? null);
         if (p.birthDate) {
           try {
             setBirthDate(parse(p.birthDate, "yyyy-MM-dd", new Date()));
@@ -68,6 +72,71 @@ const Account = () => {
         setAvatar(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSave = async () => {
+    setFeedback(null);
+
+    if (!form.name.trim()) {
+      setFeedback({ type: "error", text: "El nombre es obligatorio." });
+      return;
+    }
+
+    if (form.newPassword || form.confirmPassword || form.currentPassword) {
+      if (!form.currentPassword) {
+        setFeedback({ type: "error", text: "Indica tu contraseña actual para cambiar la contraseña." });
+        return;
+      }
+      if (!form.newPassword || !form.confirmPassword) {
+        setFeedback({ type: "error", text: "Completa nueva contraseña y confirmación." });
+        return;
+      }
+      if (form.newPassword !== form.confirmPassword) {
+        setFeedback({ type: "error", text: "La confirmación de contraseña no coincide." });
+        return;
+      }
+      if (form.newPassword.length < 6) {
+        setFeedback({ type: "error", text: "La nueva contraseña debe tener al menos 6 caracteres." });
+        return;
+      }
+    }
+
+    setSaving(true);
+    try {
+      await apiUpdateProfile({
+        name: form.name.trim(),
+        birthDate: birthDate ? format(birthDate, "yyyy-MM-dd") : "",
+        birthPlace: form.birthPlace.trim(),
+        birthTime: form.birthTime.trim(),
+        avatarUrl: avatar ?? "",
+      });
+      await refreshUser();
+
+      if (form.newPassword) {
+        await apiChangePassword(form.currentPassword, form.newPassword);
+      }
+
+      const refreshed = await portalGetProfile();
+      if (refreshed) {
+        setProfile(refreshed);
+        setAvatar(refreshed.avatarUrl ?? null);
+      }
+
+      setForm((prev) => ({
+        ...prev,
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      }));
+      setFeedback({ type: "success", text: "Cambios guardados correctamente." });
+    } catch (err) {
+      setFeedback({
+        type: "error",
+        text: err instanceof Error ? err.message : "No se pudieron guardar los cambios.",
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -179,6 +248,16 @@ const Account = () => {
               </div>
             </div>
             <div>
+              <label className="text-xs tracking-widest uppercase text-muted-foreground mb-2 block">Contraseña Actual</label>
+              <input
+                type="password"
+                value={form.currentPassword}
+                onChange={(e) => update("currentPassword", e.target.value)}
+                placeholder="Ingresa tu contraseña actual"
+                className="w-full px-4 py-3 rounded-xl bg-background/50 border border-border/50 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 text-sm"
+              />
+            </div>
+            <div>
               <label className="text-xs tracking-widest uppercase text-muted-foreground mb-2 block">Confirmar Contraseña</label>
               <div className="relative">
                 <input type={showConfirm ? "text" : "password"} value={form.confirmPassword} onChange={(e) => update("confirmPassword", e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 pr-11 rounded-xl bg-background/50 border border-border/50 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 text-sm" />
@@ -213,8 +292,18 @@ const Account = () => {
           </div>
         </motion.div>
 
-        <button className="w-full py-3.5 rounded-xl shimmer-gold font-medium tracking-wide text-sm glow-gold text-foreground">
-          Guardar Cambios
+        {feedback && (
+          <p className={`text-sm text-center ${feedback.type === "error" ? "text-destructive" : "text-emerald-500"}`}>
+            {feedback.text}
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={() => void handleSave()}
+          disabled={saving}
+          className="w-full py-3.5 rounded-xl shimmer-gold font-medium tracking-wide text-sm glow-gold text-foreground disabled:opacity-70"
+        >
+          {saving ? "Guardando..." : "Guardar Cambios"}
         </button>
       </div>
     </div>

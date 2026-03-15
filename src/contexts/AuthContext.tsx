@@ -11,6 +11,7 @@ interface User {
   role: UserRole;
   isActive: boolean;
   subscriptionStatus: SubscriptionStatus;
+  avatarUrl?: string | null;
 }
 
 interface AuthContextType {
@@ -34,7 +35,7 @@ interface AuthContextType {
   isAdmin: boolean;
   hasActiveSubscription: boolean;
   refreshUser: () => Promise<void>;
-  updateProfile: (data: { name?: string; email?: string }) => Promise<{ ok: true } | { ok: false; error: string }>;
+  updateProfile: (data: { name?: string; email?: string; birthDate?: string; birthPlace?: string; birthTime?: string; avatarUrl?: string }) => Promise<{ ok: true } | { ok: false; error: string }>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ ok: true } | { ok: false; error: string }>;
 }
 
@@ -48,6 +49,7 @@ function mapApiUser(u: ApiUser): User {
     role: u.role,
     isActive: u.isActive,
     subscriptionStatus: u.subscriptionStatus,
+    avatarUrl: u.avatarUrl ?? null,
   };
 }
 
@@ -123,7 +125,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (apiUser) setUser(mapApiUser(apiUser));
   };
 
-  const updateProfile = async (data: { name?: string; email?: string }): Promise<{ ok: true } | { ok: false; error: string }> => {
+  const updateProfile = async (data: { name?: string; email?: string; birthDate?: string; birthPlace?: string; birthTime?: string; avatarUrl?: string }): Promise<{ ok: true } | { ok: false; error: string }> => {
     try {
       const apiUser = await apiUpdateProfile(data);
       setUser(mapApiUser(apiUser));

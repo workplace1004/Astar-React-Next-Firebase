@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:5000";
 
 const getToken = (): string | null => localStorage.getItem("astar_token");
 
@@ -9,6 +9,7 @@ export interface ApiUser {
   role: "admin" | "client";
   isActive: boolean;
   subscriptionStatus: "active" | "inactive" | "cancelled";
+  avatarUrl?: string | null;
 }
 
 export async function apiLogin(email: string, password: string): Promise<{ user: ApiUser; access_token: string }> {
@@ -68,11 +69,6 @@ function authHeaders(): HeadersInit {
   };
 }
 
-function frontendBaseFromWindow(): string | undefined {
-  if (typeof window === "undefined") return undefined;
-  return window.location.origin;
-}
-
 // ——— Public: birth chart preview (no auth) ———
 
 export interface BirthChartPreviewResult {
@@ -96,15 +92,15 @@ export async function apiBirthChartPreview(data: {
   return body as BirthChartPreviewResult;
 }
 
-export async function apiUpdateProfile(data: { name?: string; email?: string }): Promise<ApiUser> {
+export async function apiUpdateProfile(data: { name?: string; email?: string; birthDate?: string; birthPlace?: string; birthTime?: string; avatarUrl?: string }): Promise<ApiUser> {
   const res = await fetch(`${API_BASE}/auth/me`, {
     method: "PATCH",
     headers: authHeaders(),
     body: JSON.stringify(data),
   });
-  const err = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((err as { message?: string }).message ?? "No se pudo actualizar el perfil");
-  return res.json();
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((body as { message?: string }).message ?? "No se pudo actualizar el perfil");
+  return body as ApiUser;
 }
 
 export async function apiChangePassword(currentPassword: string, newPassword: string): Promise<void> {
@@ -450,6 +446,7 @@ export interface PortalProfile {
   birthDate: string | null;
   birthPlace: string | null;
   birthTime: string | null;
+  avatarUrl: string | null;
   createdAt: string;
 }
 
@@ -508,7 +505,7 @@ export async function paymentCreateSubscriptionCheckout(input: {
   const res = await fetch(`${API_BASE}/payments/subscription/checkout`, {
     method: "POST",
     headers: authHeaders(),
-    body: JSON.stringify({ ...input, frontendBase: frontendBaseFromWindow() }),
+    body: JSON.stringify(input),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error((data as { message?: string }).message ?? "No se pudo iniciar el checkout");
@@ -523,7 +520,7 @@ export async function paymentCreateExtraCheckout(input: {
   const res = await fetch(`${API_BASE}/payments/extra/checkout`, {
     method: "POST",
     headers: authHeaders(),
-    body: JSON.stringify({ ...input, frontendBase: frontendBaseFromWindow() }),
+    body: JSON.stringify(input),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error((data as { message?: string }).message ?? "No se pudo iniciar el checkout");
