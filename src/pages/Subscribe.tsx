@@ -133,12 +133,16 @@ const Subscribe = () => {
     setError(null);
     setMessage(null);
     try {
-      const { checkoutUrl } = await paymentCreateSubscriptionCheckout({
+      const checkout = await paymentCreateSubscriptionCheckout({
         plan: planId,
         provider,
         billing,
       });
-      window.location.assign(checkoutUrl);
+      if (provider === "stripe") {
+        navigate("/portal/subscription");
+        return;
+      }
+      window.location.assign(checkout.checkoutUrl);
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudo iniciar el pago.";
 

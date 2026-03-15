@@ -19,9 +19,9 @@ interface CitySuggestion {
 
 const Register = () => {
   const navigate = useNavigate();
-  const { register, isAuthenticated, isAdmin, authLoading } = useAuth();
+  const { register, isAuthenticated, isAdmin, authLoading, hasActiveSubscription } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", password: "", birthDate: "", birthPlace: "", birthTime: "" });
+  const [form, setForm] = useState({ name: "", email: "", password: "", birthDate: "", birthPlace: "", birthTime: "00:00" });
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [cityInput, setCityInput] = useState("");
   const [citySuggestions, setCitySuggestions] = useState<CitySuggestion[]>([]);
@@ -31,10 +31,6 @@ const Register = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { resolvedTheme } = useTheme();
-
-  if (!authLoading && isAuthenticated) {
-    return <Navigate to={isAdmin ? "/admin" : "/portal"} replace />;
-  }
 
   const logoSrc = resolvedTheme === "light" ? "/3SIN%20FONDO/logosolofinal.png" : "/3SIN%20FONDO/logoblanco.png";
   const update = (field: string, value: string) => setForm((f) => ({ ...f, [field]: value }));
@@ -94,20 +90,32 @@ const Register = () => {
       setError("La contraseña debe tener al menos 6 caracteres.");
       return;
     }
+    if (!form.birthDate.trim()) {
+      setError("Indica tu fecha de nacimiento.");
+      return;
+    }
     if (!form.birthPlace.trim() || !selectedCityId) {
       setError("Selecciona tu ciudad desde la lista de sugerencias.");
       return;
     }
     setLoading(true);
     try {
+      const payload = {
+        name: form.name.trim(),
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+        birthDate: form.birthDate.trim(),
+        birthPlace: form.birthPlace.trim(),
+        birthTime: form.birthTime.trim() || "00:00",
+      };
       const timeoutPromise = new Promise<{ ok: false; error: string }>((_, reject) =>
         setTimeout(() => reject(new Error("timeout")), REGISTER_TIMEOUT_MS)
       );
-      const result = await Promise.race([register(form), timeoutPromise]);
+      const result = await Promise.race([register(payload), timeoutPromise]);
       if ("error" in result) {
         setError(result.error);
       } else {
-        navigate("/portal");
+        navigate("/portal/subscription");
       }
     } catch (err) {
       const message = err instanceof Error && err.message === "timeout"
@@ -118,6 +126,10 @@ const Register = () => {
       setLoading(false);
     }
   };
+
+  if (!authLoading && isAuthenticated) {
+    return <Navigate to={isAdmin ? "/admin" : hasActiveSubscription ? "/portal" : "/portal/subscription"} replace />;
+  }
 
   return (
     <div className="min-h-screen relative flex items-center justify-center bg-gradient-dark overflow-hidden py-10">

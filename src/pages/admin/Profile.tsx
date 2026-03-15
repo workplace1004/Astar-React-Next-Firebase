@@ -18,6 +18,7 @@ const AdminProfile = () => {
 
   // Password reset state
   const [savingProfile, setSavingProfile] = useState(false);
+  const [savingAvatar, setSavingAvatar] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -39,12 +40,21 @@ const AdminProfile = () => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         const result = reader.result as string;
+        const previous = avatarUrl;
         setAvatarUrl(result);
+        setSavingAvatar(true);
+        const saveResult = await updateProfile({ avatarUrl: result });
+        setSavingAvatar(false);
+        if (saveResult.ok) {
+          toast.success("Avatar actualizado correctamente");
+        } else {
+          setAvatarUrl(previous);
+          toast.error("error" in saveResult ? saveResult.error : "No se pudo guardar el avatar");
+        }
       };
       reader.readAsDataURL(file);
-      toast.success("Avatar actualizado correctamente");
     }
   };
 
@@ -63,6 +73,7 @@ const AdminProfile = () => {
   const handleCancel = () => {
     setName(user?.name || "");
     setEmail(user?.email || "");
+    setAvatarUrl(user?.avatarUrl ?? null);
     setIsEditing(false);
   };
 
@@ -113,9 +124,10 @@ const AdminProfile = () => {
           </Avatar>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+            disabled={savingAvatar}
+            className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
           >
-            <Camera className="w-5 h-5 text-white" />
+            {savingAvatar ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Camera className="w-5 h-5 text-white" />}
           </button>
           <input
             ref={fileInputRef}

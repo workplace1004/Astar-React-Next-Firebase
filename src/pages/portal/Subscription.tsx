@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
-import { CreditCard, Calendar, Receipt, Loader2 } from "lucide-react";
+import { CreditCard, Calendar, Receipt, Loader2, Check, Shield, Star, Crown } from "lucide-react";
 import { useState, useEffect } from "react";
+import { loadStripe, type Stripe } from "@stripe/stripe-js";
+import { useSearchParams } from "react-router-dom";
 import {
-  paymentCancelSubscription,
+  paymentConfirmStripeIntent,
   paymentCreateSubscriptionCheckout,
   portalGetMyOrders,
   portalGetProfile,
@@ -10,7 +12,59 @@ import {
   type PortalProfile,
 } from "@/lib/api";
 import EmptyState from "@/components/EmptyState";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
+import StripeCustomCheckout from "@/components/payments/StripeCustomCheckout";
+
+const plans = [
+  {
+    id: "essentials" as const,
+    name: "Essentials",
+    icon: Shield,
+    price: { monthly: 19, annual: 15 },
+    tagline: "Ideal para explorar tu mapa simbólico",
+    highlighted: false,
+    features: [
+      "Carta natal completa (acceso permanente)",
+      "Reporte de numerología personal",
+      "Reportes simbólicos base",
+      "Acceso al portal con historial completo",
+      "Soporte comunitario",
+    ],
+  },
+  {
+    id: "portal" as const,
+    name: "Portal",
+    icon: Star,
+    price: { monthly: 39, annual: 29 },
+    tagline: "Guía completa con acompañamiento humano",
+    highlighted: true,
+    features: [
+      "Todo de Essentials, más:",
+      "Revolución solar del año en curso",
+      "Mensaje mensual personalizado",
+      "1 pregunta mensual con respuesta humana",
+      "Soporte prioritario por email",
+      "Acceso anticipado a nuevas funciones",
+    ],
+  },
+  {
+    id: "depth" as const,
+    name: "Depth",
+    icon: Crown,
+    price: { monthly: 79, annual: 59 },
+    tagline: "Máxima profundidad con soporte dedicado",
+    highlighted: false,
+    features: [
+      "Todo de Portal, más:",
+      "3 preguntas mensuales con respuesta humana",
+      "1 sesión privada por mes",
+      "Reportes simbólicos extendidos",
+      "Guía dedicada",
+      "Agendamiento de sesiones personalizado",
+    ],
+  },
+];
 
 function formatOrderDate(iso: string) {
   try {
@@ -54,19 +108,23 @@ function nextRenewalFromLastOrder(createdAt: string, type: string) {
   }
 }
 
-function providerFromOrderMethod(method?: string): "stripe" | "mercadopago" {
-  const normalized = method?.toLowerCase() ?? "";
-  if (normalized.includes("mercadopago")) return "mercadopago";
-  return "stripe";
-}
-
 const Subscription = () => {
   const { refreshUser } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [profile, setProfile] = useState<PortalProfile | null>(null);
   const [orders, setOrders] = useState<PortalOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [billing, setBilling] = useState<"monthly" | "annual">("monthly");
+  const [processingId, setProcessingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [checkoutProvider, setCheckoutProvider] = useState<"stripe" | "mercadopago" | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
+  const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
+  const [stripePaymentIntentId, setStripePaymentIntentId] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([portalGetProfile(), portalGetMyOrders()]).then(([p, o]) => {
@@ -75,6 +133,16 @@ const Subscription = () => {
       setLoading(false);
     });
   }, []);
+
+  useEffect(() => {
+    const provider = searchParams.get("provider");
+    if (provider !== "stripe") return;
+    const clean = new URLSearchParams(searchParams);
+    clean.delete("provider");
+    clean.delete("status");
+    clean.delete("session_id");
+    setSearchParams(clean, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   if (loading) {
     return (
@@ -89,14 +157,60 @@ const Subscription = () => {
   const planLabel = lastOrder ? planLabelFromType(lastOrder.type) : "Plan";
   const planAmount = lastOrder ? formatAmount(lastOrder.amount) : null;
   const nextRenewal = lastOrder && status === "active" ? nextRenewalFromLastOrder(lastOrder.createdAt, lastOrder.type) : null;
-  const preferredProvider = providerFromOrderMethod(lastOrder?.method);
+
+  const startCheckout = async (planId: "essentials" | "portal" | "depth", provider: "stripe" | "mercadopago") => {
+    setActionMessage(null);
+    setActionError(null);
+    setProcessingId(`${planId}-${provider}`);
+    setCheckoutModalOpen(true);
+    setCheckoutProvider(provider);
+    setCheckoutUrl(null);
+    setStripePromise(null);
+    setStripeClientSecret(null);
+    setStripePaymentIntentId(null);
+    setCheckoutLoading(true);
+    try {
+      const checkout = await paymentCreateSubscriptionCheckout({
+        provider,
+        plan: planId,
+        billing,
+      });
+      if (provider === "stripe") {
+        if (checkout.mode === "custom" && checkout.stripeClientSecret && checkout.stripePublishableKey) {
+          setStripeClientSecret(checkout.stripeClientSecret);
+          setStripePromise(loadStripe(checkout.stripePublishableKey));
+          setStripePaymentIntentId(checkout.stripePaymentIntentId ?? null);
+        } else {
+          setActionError("Checkout directo de Stripe no está configurado. Revisa STRIPE_PUBLISHABLE_KEY y el endpoint de checkout.");
+          setCheckoutModalOpen(false);
+        }
+      } else {
+        setCheckoutUrl(checkout.checkoutUrl);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No se pudo iniciar el checkout.";
+      if (message.includes("STRIPE_SECRET_KEY")) {
+        setActionError("Stripe no está configurado en backend. Configura STRIPE_SECRET_KEY para abrir el checkout de Stripe.");
+      } else if (message.includes("STRIPE_PUBLISHABLE_KEY")) {
+        setActionError("Falta STRIPE_PUBLISHABLE_KEY en backend para mostrar checkout directo en modal.");
+      } else if (message.includes("MERCADOPAGO_ACCESS_TOKEN")) {
+        setActionError("Mercado Pago no está configurado en backend. Configura MERCADOPAGO_ACCESS_TOKEN.");
+      } else {
+        setActionError(message);
+      }
+      setCheckoutModalOpen(false);
+    } finally {
+      setCheckoutLoading(false);
+      setProcessingId(null);
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto">
 
       {/* Current plan */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card rounded-2xl p-8 premium-shadow border border-primary/20 mb-8">
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex items-center gap-4">
           <CreditCard className="w-8 h-8 text-primary" />
           <div>
             <p className="text-xs tracking-widest uppercase text-primary">
@@ -116,78 +230,89 @@ const Subscription = () => {
             Próxima renovación: {nextRenewal}
           </div>
         )}
-        <div className="flex gap-3 flex-wrap">
-          <button
-            onClick={async () => {
-              setActionError(null);
-              setActionLoading(true);
-              try {
-                let checkout = await paymentCreateSubscriptionCheckout({
-                  provider: preferredProvider,
-                  plan: "portal",
-                  billing: "monthly",
-                });
+      </motion.div>
 
-                // Fallback to Mercado Pago when Stripe is not configured on backend.
-                if (
-                  preferredProvider === "stripe" &&
-                  !checkout.checkoutUrl
-                ) {
-                  checkout = await paymentCreateSubscriptionCheckout({
-                    provider: "mercadopago",
-                    plan: "portal",
-                    billing: "monthly",
-                  });
-                }
-                window.location.assign(checkout.checkoutUrl);
-              } catch (err) {
-                const message = err instanceof Error ? err.message : "No se pudo iniciar el checkout.";
-                if (preferredProvider === "stripe" && message.includes("STRIPE_SECRET_KEY")) {
-                  try {
-                    const fallback = await paymentCreateSubscriptionCheckout({
-                      provider: "mercadopago",
-                      plan: "portal",
-                      billing: "monthly",
-                    });
-                    window.location.assign(fallback.checkoutUrl);
-                    return;
-                  } catch (fallbackErr) {
-                    setActionError(fallbackErr instanceof Error ? fallbackErr.message : "No se pudo iniciar el checkout.");
-                    setActionLoading(false);
-                    return;
-                  }
-                }
-                setActionError(message);
-                setActionLoading(false);
-              }
-            }}
-            disabled={actionLoading}
-            className="px-6 py-2.5 rounded-xl border border-border/50 text-foreground text-sm hover:bg-accent/50 transition-colors disabled:opacity-70"
-          >
-            {actionLoading ? "Procesando..." : "Renovar / Actualizar pago"}
-          </button>
-          <button
-            onClick={async () => {
-              setActionError(null);
-              setActionLoading(true);
-              try {
-                await paymentCancelSubscription();
-                await refreshUser();
-                const p = await portalGetProfile();
-                setProfile(p ?? null);
-              } catch (err) {
-                setActionError(err instanceof Error ? err.message : "No se pudo cancelar.");
-              } finally {
-                setActionLoading(false);
-              }
-            }}
-            disabled={actionLoading}
-            className="px-6 py-2.5 rounded-xl border border-destructive/30 text-destructive text-sm hover:bg-destructive/10 transition-colors disabled:opacity-70"
-          >
-            Cancelar Suscripción
-          </button>
+      {/* Plans */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="glass-card rounded-2xl p-6 premium-shadow border border-border/40 mb-8">
+        {actionMessage && <p className="text-sm text-emerald-400 mb-4">{actionMessage}</p>}
+        {actionError && <p className="text-sm text-destructive mb-4">{actionError}</p>}
+        <div className="flex flex-col gap-4 mb-6">
+          <h3 className="font-serif text-xl text-foreground">Elegir plan</h3>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setBilling("monthly")}
+              className={`px-4 py-2 rounded-full text-xs font-medium tracking-wide transition-all ${
+                billing === "monthly"
+                  ? "bg-primary/20 border border-primary/50 text-primary"
+                  : "border border-border/50 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Pago Mensual
+            </button>
+            <button
+              onClick={() => setBilling("annual")}
+              className={`px-4 py-2 rounded-full text-xs font-medium tracking-wide transition-all ${
+                billing === "annual"
+                  ? "bg-primary/20 border border-primary/50 text-primary"
+                  : "border border-border/50 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Pago Anual
+            </button>
+          </div>
         </div>
-        {actionError && <p className="text-sm text-destructive mt-3">{actionError}</p>}
+
+        <div className="grid md:grid-cols-3 gap-4">
+          {plans.map((plan) => (
+            <div
+              key={plan.id}
+              className={`relative overflow-hidden rounded-2xl p-6 flex flex-col ${
+                plan.highlighted
+                  ? "border-2 border-primary/70 bg-card/90 shadow-[0_0_0_1px_hsl(var(--primary)/0.5),0_0_20px_hsl(var(--primary)/0.22)]"
+                  : "border border-border/70 bg-card/80"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-serif text-xl text-foreground">{plan.name}</h4>
+                <plan.icon className={`w-5 h-5 ${plan.highlighted ? "text-primary" : "text-muted-foreground"}`} />
+              </div>
+
+              <div className="mb-2">
+                <span className="font-sans text-4xl font-light text-gradient-gold tabular-nums">${plan.price[billing]}</span>
+                <span className="text-muted-foreground text-xs ml-2">USD / mes</span>
+              </div>
+              <p className="text-xs text-muted-foreground mb-5">{plan.tagline}</p>
+
+              <div className="space-y-2 mb-5">
+                <button
+                  onClick={() => void startCheckout(plan.id, "stripe")}
+                  disabled={processingId != null}
+                  className="w-full py-2.5 rounded-xl shimmer-gold text-primary-foreground font-medium text-xs hover:opacity-90 transition-opacity disabled:opacity-70"
+                >
+                  {processingId === `${plan.id}-stripe` ? "Redirigiendo..." : "Pagar con Stripe (USD)"}
+                </button>
+                <button
+                  onClick={() => void startCheckout(plan.id, "mercadopago")}
+                  disabled={processingId != null}
+                  className="w-full py-2.5 rounded-xl bg-accent border border-border/50 text-foreground font-medium text-xs hover:bg-accent/80 transition-colors disabled:opacity-70"
+                >
+                  {processingId === `${plan.id}-mercadopago` ? "Redirigiendo..." : "Pagar con Mercado Pago (ARS)"}
+                </button>
+              </div>
+
+              <div className="h-px w-full bg-border/50 mb-4" />
+
+              <ul className="space-y-2 flex-1">
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-2 text-xs">
+                    <Check className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+                    <span className="text-muted-foreground">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
       </motion.div>
 
       {/* Payment history */}
@@ -209,6 +334,85 @@ const Subscription = () => {
           </div>
         )}
       </motion.div>
+
+      <Dialog
+        open={checkoutModalOpen}
+        onOpenChange={(open) => {
+          setCheckoutModalOpen(open);
+          if (!open) {
+            setCheckoutUrl(null);
+            setCheckoutProvider(null);
+            setCheckoutLoading(false);
+            setStripePromise(null);
+            setStripeClientSecret(null);
+            setStripePaymentIntentId(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl p-0 overflow-hidden border-border/50 bg-card/95 backdrop-blur-xl">
+          <div className="p-5 border-b border-border/40">
+            <DialogHeader>
+              <DialogTitle>
+                Checkout {checkoutProvider === "mercadopago" ? "Mercado Pago" : "Stripe"}
+              </DialogTitle>
+              <DialogDescription>
+                Completa tu pago en esta ventana. Si no carga, usa el botón para abrirlo en una pestaña.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          <div className="p-5">
+            {checkoutLoading ? (
+              <div className="h-[520px] flex items-center justify-center text-muted-foreground gap-2">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Preparando checkout...
+              </div>
+            ) : checkoutProvider === "stripe" && stripePromise && stripeClientSecret ? (
+              <div className="rounded-xl border border-border/40 bg-background p-2">
+                <StripeCustomCheckout
+                  stripePromise={stripePromise}
+                  clientSecret={stripeClientSecret}
+                  paymentIntentId={stripePaymentIntentId}
+                  defaultName={profile?.name ?? ""}
+                  defaultEmail={profile?.email ?? ""}
+                  onError={(message) => setActionError(message)}
+                  onSuccess={async (intentId) => {
+                    await paymentConfirmStripeIntent(intentId);
+                    await refreshUser();
+                    const [p, o] = await Promise.all([portalGetProfile(), portalGetMyOrders()]);
+                    setProfile(p ?? null);
+                    setOrders(Array.isArray(o) ? o : []);
+                    setActionError(null);
+                    setActionMessage("Pago confirmado. Tu suscripción está activa.");
+                    setCheckoutModalOpen(false);
+                  }}
+                />
+              </div>
+            ) : checkoutProvider === "mercadopago" && checkoutUrl ? (
+              <>
+                <iframe
+                  title="Checkout"
+                  src={checkoutUrl}
+                  className="w-full h-[520px] rounded-xl border border-border/40 bg-background"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="mt-4 flex justify-end">
+                  <button
+                    onClick={() => window.open(checkoutUrl, "_blank", "noopener,noreferrer")}
+                    className="px-4 py-2 rounded-lg text-sm border border-border/50 hover:bg-accent/50 transition-colors"
+                  >
+                    Abrir checkout en nueva pestaña
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="h-[200px] flex items-center justify-center text-sm text-destructive">
+                No se pudo cargar el checkout.
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

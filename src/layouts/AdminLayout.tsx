@@ -52,6 +52,7 @@ const AdminLayoutContent = () => {
   const meta = pageMeta[currentPath] || { title: "Admin", subtitle: "Panel de administración" };
 
   const unreadCount = notifications.filter((n) => n.unread).length;
+  const previewNotifications = notifications.slice(0, 5);
   const NotificationPopover = () => (
     <Popover>
       <PopoverTrigger asChild>
@@ -72,12 +73,12 @@ const AdminLayoutContent = () => {
           </p>
         </div>
         <div className="max-h-72 overflow-y-auto">
-          {notifications.length === 0 ? (
+          {previewNotifications.length === 0 ? (
             <div className="px-4 py-4">
               <EmptyState icon={Bell} message="No hay notificaciones nuevas." className="py-6" />
             </div>
           ) : (
-            notifications.map((n) => (
+            previewNotifications.map((n) => (
               <button
                 key={n.id}
                 type="button"
@@ -115,8 +116,12 @@ const AdminLayoutContent = () => {
             <p className="text-sm font-medium text-foreground">{user?.name}</p>
             <p className="text-xs text-muted-foreground">Administrador</p>
           </div>
-          <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-sm font-semibold">
-            {user?.name?.charAt(0) || "A"}
+          <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-sm font-semibold overflow-hidden">
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt={user?.name || "Administrador"} className="w-full h-full object-cover" />
+            ) : (
+              user?.name?.charAt(0) || "A"
+            )}
           </div>
         </button>
       </PopoverTrigger>
@@ -130,10 +135,10 @@ const AdminLayoutContent = () => {
             <User className="w-4 h-4" />
             Mi Perfil
           </button>
-          <button className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
+          {/* <button className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
             <Settings className="w-4 h-4" />
             Configuración
-          </button>
+          </button> */}
         </div>
         <div className="p-2 border-t border-border/30">
           <button onClick={handleLogout} className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors">

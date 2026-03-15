@@ -495,12 +495,17 @@ export interface CheckoutResponse {
   provider: "stripe" | "mercadopago";
   checkoutUrl: string;
   reference: string;
+  mode?: "custom";
+  stripeClientSecret?: string;
+  stripePublishableKey?: string;
+  stripePaymentIntentId?: string;
 }
 
 export async function paymentCreateSubscriptionCheckout(input: {
   provider: "stripe" | "mercadopago";
   plan: "essentials" | "portal" | "depth";
   billing: "monthly" | "annual";
+  embedded?: boolean;
 }): Promise<CheckoutResponse> {
   const res = await fetch(`${API_BASE}/payments/subscription/checkout`, {
     method: "POST",
@@ -532,6 +537,17 @@ export async function paymentConfirmStripeSession(sessionId: string): Promise<{ 
     method: "POST",
     headers: authHeaders(),
     body: JSON.stringify({ sessionId }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data as { message?: string }).message ?? "No se pudo confirmar el pago de Stripe");
+  return data as { ok: boolean };
+}
+
+export async function paymentConfirmStripeIntent(paymentIntentId: string): Promise<{ ok: boolean }> {
+  const res = await fetch(`${API_BASE}/payments/confirm/stripe-intent`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ paymentIntentId }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error((data as { message?: string }).message ?? "No se pudo confirmar el pago de Stripe");

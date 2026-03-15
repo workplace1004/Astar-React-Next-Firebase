@@ -62,6 +62,7 @@ const PortalLayoutContent = () => {
   const meta = pageMeta[currentPath] || { title: "Portal", subtitle: "Tu espacio personal" };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const previewNotifications = notifications.slice(0, 5);
 
   const NotificationPopover = () => (
     <Popover>
@@ -81,10 +82,10 @@ const PortalLayoutContent = () => {
           <p className="text-xs text-muted-foreground mt-0.5">{unreadCount} sin leer</p>
         </div>
         <div className="max-h-72 overflow-y-auto divide-y divide-border/20">
-          {notifications.length === 0 ? (
+          {previewNotifications.length === 0 ? (
             <div className="px-4 py-6 text-center text-sm text-muted-foreground">No hay notificaciones</div>
           ) : (
-            notifications.map((notif) => (
+            previewNotifications.map((notif) => (
               <div key={notif.id} className={`flex items-start gap-3 px-4 py-3 hover:bg-accent/30 transition-colors cursor-pointer ${!notif.read ? "bg-primary/5" : ""}`}>
                 <div className={`mt-0.5 p-1.5 rounded-lg flex-shrink-0 ${!notif.read ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
                   <Bell className="w-3.5 h-3.5" />
@@ -114,8 +115,12 @@ const PortalLayoutContent = () => {
             <p className="text-sm font-medium text-foreground">{user?.name}</p>
             <p className="text-xs text-muted-foreground">Suscriptor</p>
           </div>
-          <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-sm font-semibold">
-            {user?.name?.charAt(0) || "U"}
+          <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-sm font-semibold overflow-hidden">
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt={user?.name || "Usuario"} className="w-full h-full object-cover" />
+            ) : (
+              user?.name?.charAt(0) || "U"
+            )}
           </div>
         </button>
       </PopoverTrigger>
@@ -186,7 +191,7 @@ const PortalLayoutContent = () => {
       {/* Main content */}
       <div className="flex-1 lg:ml-64 relative z-10">
         {/* Mobile header */}
-        <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-background/80 backdrop-blur-xl border-b border-border/30">
+        <header className="lg:hidden fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4 py-3 bg-background/80 backdrop-blur-xl border-b border-border/30">
           <button onClick={() => setSidebarOpen(true)} className="p-2 text-muted-foreground hover:text-foreground">
             <Menu className="w-5 h-5" />
           </button>
@@ -200,7 +205,7 @@ const PortalLayoutContent = () => {
         </header>
 
         {/* Desktop header with dynamic title */}
-        <header className="hidden lg:flex sticky top-0 z-30 items-center justify-between h-[73px] px-10 bg-background/60 backdrop-blur-xl border-b border-border/20">
+        <header className="hidden lg:flex fixed top-0 left-64 right-0 z-30 items-center justify-between h-[73px] px-10 bg-background/60 backdrop-blur-xl border-b border-border/20">
           <div>
             <h1 className="font-serif text-lg text-foreground font-semibold leading-tight">{meta.title}</h1>
             <p className="text-xs text-muted-foreground mt-0.5">{meta.subtitle}</p>
@@ -212,7 +217,7 @@ const PortalLayoutContent = () => {
           </div>
         </header>
 
-        <div className="p-6 md:p-10">
+        <div className="mt-[73px] p-6 md:p-10">
           <Outlet />
         </div>
       </div>
@@ -222,6 +227,7 @@ const PortalLayoutContent = () => {
 
 const PortalLayout = () => {
   const { user, isAuthenticated, authLoading, hasActiveSubscription } = useAuth();
+  const location = useLocation();
 
   if (authLoading) {
     return <LoadingSpinner />;
@@ -231,8 +237,8 @@ const PortalLayout = () => {
     return <Navigate to="/login" replace />;
   }
 
-  if (!hasActiveSubscription) {
-    return <Navigate to="/subscribe" replace />;
+  if (!hasActiveSubscription && location.pathname !== "/portal/subscription") {
+    return <Navigate to="/portal/subscription" replace />;
   }
 
   return (

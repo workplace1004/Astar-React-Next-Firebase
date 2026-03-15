@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { BadgeDollarSign, Loader2, ShoppingCart } from "lucide-react";
+import { loadStripe, type Stripe } from "@stripe/stripe-js";
 import {
   paymentConfirmMercadoPagoPayment,
+  paymentConfirmStripeIntent,
   paymentConfirmStripeSession,
   paymentCreateExtraCheckout,
 } from "@/lib/api";
 import { useSearchParams } from "react-router-dom";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import StripeCustomCheckout from "@/components/payments/StripeCustomCheckout";
 
 const extras = [
   {
@@ -29,6 +33,13 @@ const Purchase = () => {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
+  const [checkoutProvider, setCheckoutProvider] = useState<"stripe" | "mercadopago" | null>(null);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
+  const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
+  const [stripePaymentIntentId, setStripePaymentIntentId] = useState<string | null>(null);
 
   const paymentStatus = searchParams.get("status");
   const paymentProvider = searchParams.get("provider");
@@ -70,16 +81,37 @@ const Purchase = () => {
     setProcessing(`${extraType}-${provider}`);
     setError(null);
     setMessage(null);
+    setCheckoutProvider(provider);
+    setCheckoutModalOpen(true);
+    setCheckoutUrl(null);
+    setStripePromise(null);
+    setStripeClientSecret(null);
+    setStripePaymentIntentId(null);
+    setCheckoutLoading(true);
     try {
-      const { checkoutUrl } = await paymentCreateExtraCheckout({
+      const checkout = await paymentCreateExtraCheckout({
         extraType,
         provider,
         quantity: 1,
       });
-      window.location.assign(checkoutUrl);
+      if (provider === "stripe") {
+        if (checkout.mode === "custom" && checkout.stripeClientSecret && checkout.stripePublishableKey) {
+          setStripeClientSecret(checkout.stripeClientSecret);
+          setStripePromise(loadStripe(checkout.stripePublishableKey));
+          setStripePaymentIntentId(checkout.stripePaymentIntentId ?? null);
+        } else {
+          setError("Stripe custom checkout no está disponible.");
+          setCheckoutModalOpen(false);
+        }
+      } else {
+        setCheckoutUrl(checkout.checkoutUrl);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo iniciar el pago.");
+      setCheckoutModalOpen(false);
+    } finally {
       setProcessing(null);
+      setCheckoutLoading(false);
     }
   };
 
@@ -130,6 +162,64 @@ const Purchase = () => {
           Las compras extra se registran en tu historial de pagos.
         </div>
       )}
+
+      <Dialog
+        open={checkoutModalOpen}
+        onOpenChange={(open) => {
+          setCheckoutModalOpen(open);
+          if (!open) {
+            setCheckoutProvider(null);
+            setCheckoutUrl(null);
+            setCheckoutLoading(false);
+            setStripePromise(null);
+            setStripeClientSecret(null);
+            setStripePaymentIntentId(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-xl p-0 overflow-hidden border-border/50 bg-card/95 backdrop-blur-xl">
+          <div className="p-5 border-b border-border/40">
+            <DialogHeader>
+              <DialogTitle>Checkout {checkoutProvider === "mercadopago" ? "Mercado Pago" : "Stripe"}</DialogTitle>
+              <DialogDescription>Completa tu pago en esta ventana.</DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="p-5">
+            {checkoutLoading ? (
+              <div className="h-[420px] flex items-center justify-center text-muted-foreground gap-2">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Preparando checkout...
+              </div>
+            ) : checkoutProvider === "stripe" && stripePromise && stripeClientSecret ? (
+              <div className="rounded-xl border border-border/40 bg-background p-2 min-h-[420px]">
+                <StripeCustomCheckout
+                  stripePromise={stripePromise}
+                  clientSecret={stripeClientSecret}
+                  paymentIntentId={stripePaymentIntentId}
+                  onError={setError}
+                  onSuccess={async (intentId) => {
+                    await paymentConfirmStripeIntent(intentId);
+                    setMessage("Pago confirmado. Tu compra extra ya está registrada.");
+                    setError(null);
+                    setCheckoutModalOpen(false);
+                  }}
+                />
+              </div>
+            ) : checkoutProvider === "mercadopago" && checkoutUrl ? (
+              <iframe
+                title="Checkout Mercado Pago"
+                src={checkoutUrl}
+                className="w-full h-[520px] rounded-xl border border-border/40 bg-background"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="h-[200px] flex items-center justify-center text-sm text-destructive">
+                No se pudo cargar el checkout.
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { User, Calendar as CalendarIcon, Lock, Bell, CalendarDays, Eye, EyeOff, Camera, Loader2 } from "lucide-react";
+import { User, Calendar as CalendarIcon, Lock, CalendarDays, Eye, EyeOff, Camera, Loader2 } from "lucide-react";
 import { format, parse } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -44,11 +44,6 @@ const Account = () => {
   useEffect(() => {
     if (user?.name && !profile) setForm((f) => ({ ...f, name: user.name }));
   }, [user?.name, profile]);
-  const [notifications, setNotifications] = useState({
-    email: true,
-    messages: true,
-    offers: false,
-  });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [avatar, setAvatar] = useState<string | null>(null);
@@ -266,29 +261,6 @@ const Account = () => {
                 </button>
               </div>
             </div>
-          </div>
-        </motion.div>
-
-        {/* Notifications */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="glass-card rounded-2xl p-6 premium-shadow">
-          <h3 className="font-serif text-lg text-foreground mb-4 flex items-center gap-2"><Bell className="w-4 h-4 text-primary" /> Notificaciones</h3>
-          <div className="space-y-4">
-            {[
-              { key: "email" as const, label: "Notificaciones por email" },
-              { key: "messages" as const, label: "Alertas de mensajes" },
-              { key: "offers" as const, label: "Ofertas y novedades" },
-            ].map((n) => (
-              <label key={n.key} className="flex items-center justify-between cursor-pointer">
-                <span className="text-sm text-muted-foreground">{n.label}</span>
-                <button
-                  type="button"
-                  onClick={() => setNotifications((p) => ({ ...p, [n.key]: !p[n.key] }))}
-                  className={`relative w-11 h-6 rounded-full transition-colors ${notifications[n.key] ? "bg-primary" : "bg-muted-foreground/30"}`}
-                >
-                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-foreground transition-transform ${notifications[n.key] ? "translate-x-5 bg-primary-foreground" : ""}`} />
-                </button>
-              </label>
-            ))}
           </div>
         </motion.div>
 
