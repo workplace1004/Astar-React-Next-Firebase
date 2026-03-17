@@ -10,6 +10,7 @@ import {
 import { useSearchParams } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import StripeCustomCheckout from "@/components/payments/StripeCustomCheckout";
+import MercadoPagoCustomCheckout from "@/components/payments/MercadoPagoCustomCheckout";
 
 const extras = [
   {
@@ -35,7 +36,7 @@ const Purchase = () => {
   const [processing, setProcessing] = useState<string | null>(null);
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [checkoutProvider, setCheckoutProvider] = useState<"stripe" | "mercadopago" | null>(null);
-  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [checkoutExtraType, setCheckoutExtraType] = useState<"extra_question" | "private_session" | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
@@ -82,12 +83,16 @@ const Purchase = () => {
     setError(null);
     setMessage(null);
     setCheckoutProvider(provider);
+    setCheckoutExtraType(extraType);
     setCheckoutModalOpen(true);
-    setCheckoutUrl(null);
     setStripePromise(null);
     setStripeClientSecret(null);
     setStripePaymentIntentId(null);
-    setCheckoutLoading(true);
+    setCheckoutLoading(provider === "stripe");
+    if (provider === "mercadopago") {
+      setProcessing(null);
+      return;
+    }
     try {
       const checkout = await paymentCreateExtraCheckout({
         extraType,
@@ -103,8 +108,6 @@ const Purchase = () => {
           setError("Stripe custom checkout no está disponible.");
           setCheckoutModalOpen(false);
         }
-      } else {
-        setCheckoutUrl(checkout.checkoutUrl);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo iniciar el pago.");
@@ -169,7 +172,7 @@ const Purchase = () => {
           setCheckoutModalOpen(open);
           if (!open) {
             setCheckoutProvider(null);
-            setCheckoutUrl(null);
+            setCheckoutExtraType(null);
             setCheckoutLoading(false);
             setStripePromise(null);
             setStripeClientSecret(null);
@@ -205,13 +208,20 @@ const Purchase = () => {
                   }}
                 />
               </div>
-            ) : checkoutProvider === "mercadopago" && checkoutUrl ? (
-              <iframe
-                title="Checkout Mercado Pago"
-                src={checkoutUrl}
-                className="w-full h-[520px] rounded-xl border border-border/40 bg-background"
-                referrerPolicy="no-referrer"
-              />
+            ) : checkoutProvider === "mercadopago" && checkoutExtraType ? (
+              <div className="rounded-xl border border-border/40 bg-background p-2 min-h-[420px]">
+                <MercadoPagoCustomCheckout
+                  onError={(msg) => setError(msg || null)}
+                  onSubmit={async () => {
+                    const checkout = await paymentCreateExtraCheckout({
+                      extraType: checkoutExtraType,
+                      provider: "mercadopago",
+                      quantity: 1,
+                    });
+                    return checkout.checkoutUrl;
+                  }}
+                />
+              </div>
             ) : (
               <div className="h-[200px] flex items-center justify-center text-sm text-destructive">
                 No se pudo cargar el checkout.

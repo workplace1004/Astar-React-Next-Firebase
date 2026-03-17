@@ -15,6 +15,7 @@ import EmptyState from "@/components/EmptyState";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import StripeCustomCheckout from "@/components/payments/StripeCustomCheckout";
+import MercadoPagoCustomCheckout from "@/components/payments/MercadoPagoCustomCheckout";
 
 const plans = [
   {
@@ -118,8 +119,8 @@ const Subscription = () => {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
-  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [checkoutProvider, setCheckoutProvider] = useState<"stripe" | "mercadopago" | null>(null);
+  const [checkoutPlanId, setCheckoutPlanId] = useState<"essentials" | "portal" | "depth" | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
@@ -164,11 +165,15 @@ const Subscription = () => {
     setProcessingId(`${planId}-${provider}`);
     setCheckoutModalOpen(true);
     setCheckoutProvider(provider);
-    setCheckoutUrl(null);
+    setCheckoutPlanId(planId);
     setStripePromise(null);
     setStripeClientSecret(null);
     setStripePaymentIntentId(null);
-    setCheckoutLoading(true);
+    setCheckoutLoading(provider === "stripe");
+    if (provider === "mercadopago") {
+      setProcessingId(null);
+      return;
+    }
     try {
       const checkout = await paymentCreateSubscriptionCheckout({
         provider,
@@ -184,8 +189,6 @@ const Subscription = () => {
           setActionError("Checkout directo de Stripe no está configurado. Revisa STRIPE_PUBLISHABLE_KEY y el endpoint de checkout.");
           setCheckoutModalOpen(false);
         }
-      } else {
-        setCheckoutUrl(checkout.checkoutUrl);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudo iniciar el checkout.";
@@ -296,7 +299,7 @@ const Subscription = () => {
                   disabled={processingId != null}
                   className="w-full py-2.5 rounded-xl bg-accent border border-border/50 text-foreground font-medium text-xs hover:bg-accent/80 transition-colors disabled:opacity-70"
                 >
-                  {processingId === `${plan.id}-mercadopago` ? "Redirigiendo..." : "Pagar con Mercado Pago (ARS)"}
+                  {processingId === `${plan.id}-mercadopago` ? "Procesando..." : "Pagar con Mercado Pago (ARS)"}
                 </button>
               </div>
 
@@ -340,8 +343,8 @@ const Subscription = () => {
         onOpenChange={(open) => {
           setCheckoutModalOpen(open);
           if (!open) {
-            setCheckoutUrl(null);
             setCheckoutProvider(null);
+            setCheckoutPlanId(null);
             setCheckoutLoading(false);
             setStripePromise(null);
             setStripeClientSecret(null);
@@ -356,7 +359,7 @@ const Subscription = () => {
                 Checkout {checkoutProvider === "mercadopago" ? "Mercado Pago" : "Stripe"}
               </DialogTitle>
               <DialogDescription>
-                Completa tu pago en esta ventana. Si no carga, usa el botón para abrirlo en una pestaña.
+                Completa tu pago en esta ventana.
               </DialogDescription>
             </DialogHeader>
           </div>
@@ -388,23 +391,22 @@ const Subscription = () => {
                   }}
                 />
               </div>
-            ) : checkoutProvider === "mercadopago" && checkoutUrl ? (
-              <>
-                <iframe
-                  title="Checkout"
-                  src={checkoutUrl}
-                  className="w-full h-[520px] rounded-xl border border-border/40 bg-background"
-                  referrerPolicy="no-referrer"
+            ) : checkoutProvider === "mercadopago" && checkoutPlanId ? (
+              <div className="rounded-xl border border-border/40 bg-background p-2">
+                <MercadoPagoCustomCheckout
+                  defaultName={profile?.name ?? ""}
+                  defaultEmail={profile?.email ?? ""}
+                  onError={(message) => setActionError(message || null)}
+                  onSubmit={async () => {
+                    const checkout = await paymentCreateSubscriptionCheckout({
+                      provider: "mercadopago",
+                      plan: checkoutPlanId,
+                      billing,
+                    });
+                    return checkout.checkoutUrl;
+                  }}
                 />
-                <div className="mt-4 flex justify-end">
-                  <button
-                    onClick={() => window.open(checkoutUrl, "_blank", "noopener,noreferrer")}
-                    className="px-4 py-2 rounded-lg text-sm border border-border/50 hover:bg-accent/50 transition-colors"
-                  >
-                    Abrir checkout en nueva pestaña
-                  </button>
-                </div>
-              </>
+              </div>
             ) : (
               <div className="h-[200px] flex items-center justify-center text-sm text-destructive">
                 No se pudo cargar el checkout.

@@ -18,6 +18,7 @@ const BirthChartPreview = () => {
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
   const [birthPlace, setBirthPlace] = useState("");
+  const [email, setEmail] = useState("");
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [cityInput, setCityInput] = useState("");
   const [citySuggestions, setCitySuggestions] = useState<CitySuggestion[]>([]);
@@ -86,12 +87,17 @@ const BirthChartPreview = () => {
       setError("Selecciona tu ciudad desde la lista de sugerencias.");
       return;
     }
+    if (!email.trim()) {
+      setError("Ingresa tu email.");
+      return;
+    }
     setLoading(true);
     try {
       const data = await apiBirthChartPreview({
         birthDate: birthDate.trim(),
         birthTime: birthTime.trim() || "12:00",
         birthPlace: birthPlace.trim(),
+        email: email.trim().toLowerCase(),
       });
       setResult(data);
     } catch (err) {
@@ -128,9 +134,9 @@ const BirthChartPreview = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
           onSubmit={handleSubmit}
-          className="max-w-xl mx-auto mb-12"
+          className="max-w-3xl mx-auto mb-12"
         >
-          <div className="grid sm:grid-cols-3 gap-10 mb-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-4">
             <div>
               <label htmlFor="birthDate" className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Fecha de nacimiento
@@ -142,7 +148,7 @@ const BirthChartPreview = () => {
                     type="button"
                     className={cn(
                       "min-w-[150px] px-4 py-3 rounded-xl bg-background/80 border border-border text-base text-left flex items-center justify-between transition-colors focus:border-primary/50 focus:ring-1 focus:ring-primary/30 outline-none",
-                      birthDate ? "text-foreground" : "text-muted-foreground"
+                      birthDate ? "text-foreground" : "text-gray-400"
                     )}
                   >
                     <span className="flex items-center gap-2">
@@ -199,7 +205,7 @@ const BirthChartPreview = () => {
                     setSelectedCityId(null);
                     setCityOpen(true);
                   }}
-                  className="w-full px-4 py-3 rounded-xl placeholder:text-muted-foreground bg-background/80 border border-border text-base text-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+                  className="w-full px-4 py-3  rounded-xl placeholder:text-gray-400 bg-background/80 border border-border text-base text-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/30 outline-none transition-all"
                 />
                 <MapPin className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 {cityOpen && (cityInput.trim().length >= 2 || citySuggestions.length > 0) && (
@@ -238,6 +244,20 @@ const BirthChartPreview = () => {
                   </div>
                 )}
               </div>
+            </div>
+            <div>
+              <label htmlFor="previewEmail" className="block text-sm font-medium text-muted-foreground mb-1.5">
+                Email
+              </label>
+              <input
+                id="previewEmail"
+                type="email"
+                placeholder="tu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl placeholder:text-gray-400 bg-background/80 border border-border text-base text-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+                autoComplete="email"
+              />
             </div>
           </div>
           {error && (

@@ -81,6 +81,7 @@ export async function apiBirthChartPreview(data: {
   birthDate: string;
   birthTime: string;
   birthPlace: string;
+  email: string;
 }): Promise<BirthChartPreviewResult> {
   const res = await fetch(`${API_BASE}/birth-chart/preview`, {
     method: "POST",
