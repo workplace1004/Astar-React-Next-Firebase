@@ -17,28 +17,6 @@ interface CitySuggestion {
   timezone?: string;
 }
 
-function computeTimezoneOffsetHours(dateIso: string, time24: string, timeZone?: string): number | undefined {
-  if (!timeZone) return undefined;
-  const [y, m, d] = dateIso.split("-").map(Number);
-  const [hh, mm] = time24.split(":").map(Number);
-  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return undefined;
-  const utcDate = new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1, Number.isFinite(hh) ? hh : 12, Number.isFinite(mm) ? mm : 0));
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    timeZoneName: "shortOffset",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(utcDate);
-  const offsetPart = parts.find((p) => p.type === "timeZoneName")?.value ?? "";
-  const match = offsetPart.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/i);
-  if (!match) return undefined;
-  const sign = match[1] === "-" ? -1 : 1;
-  const hours = parseInt(match[2] ?? "0", 10);
-  const minutes = parseInt(match[3] ?? "0", 10);
-  return sign * (hours + minutes / 60);
-}
-
 const BirthChartPreview = () => {
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
@@ -123,7 +101,10 @@ const BirthChartPreview = () => {
       return;
     }
     const birthTimeValue = birthTime.trim() || "12:00";
-    const tzone = computeTimezoneOffsetHours(birthDate.trim(), birthTimeValue, selectedCity.timezone);
+    if (!selectedCity.timezone) {
+      setError("No se pudo obtener zona horaria de la ciudad. Elige otra ciudad sugerida.");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -134,8 +115,11 @@ const BirthChartPreview = () => {
         email: email.trim().toLowerCase(),
         lat: selectedCity.lat,
         lon: selectedCity.lon,
-        tzone,
+        timezone: selectedCity.timezone,
       });
+      if (!data.chartUrl) {
+        throw new Error("No se pudo generar el dibujo de la carta astral.");
+      }
       setResult(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo calcular tu carta.");
@@ -323,22 +307,20 @@ const BirthChartPreview = () => {
             transition={{ duration: 0.5 }}
             className="space-y-6"
           >
-            {result.chartUrl && (
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                className="p-4 rounded-2xl glass-card border border-border/80 premium-shadow"
-              >
-                <p className="text-sm uppercase tracking-widest text-primary mb-3">Dibujo de tu carta astral</p>
-                <img
-                  src={result.chartUrl}
-                  alt="Dibujo de carta astral"
-                  className="w-full max-w-3xl mx-auto rounded-xl border border-border/40 bg-card"
-                  loading="lazy"
-                />
-              </motion.div>
-            )}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="p-4 rounded-2xl glass-card border border-border/80 premium-shadow"
+            >
+              <p className="text-sm uppercase tracking-widest text-primary mb-3">Dibujo de tu carta astral</p>
+              <img
+                src={result.chartUrl}
+                alt="Dibujo de carta astral"
+                className="w-full max-w-3xl mx-auto rounded-xl border border-border/40 bg-card"
+                loading="lazy"
+              />
+            </motion.div>
             <div className="grid md:grid-cols-3 gap-6">
               {[
                 { key: "sun" as const, icon: Sun, title: "Sol" },

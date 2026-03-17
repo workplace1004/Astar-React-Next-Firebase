@@ -75,7 +75,7 @@ export interface BirthChartPreviewResult {
   sun: { sign: string; symbol: string; description: string };
   moon: { sign: string; symbol: string; description: string };
   ascendant: { sign: string; symbol: string; description: string };
-  chartUrl?: string | null;
+  chartUrl: string;
 }
 
 export async function apiBirthChartPreview(data: {
@@ -83,9 +83,10 @@ export async function apiBirthChartPreview(data: {
   birthTime: string;
   birthPlace: string;
   email: string;
-  lat?: number;
-  lon?: number;
+  lat: number;
+  lon: number;
   tzone?: number;
+  timezone?: string;
 }): Promise<BirthChartPreviewResult> {
   const res = await fetch(`${API_BASE}/birth-chart/preview`, {
     method: "POST",
