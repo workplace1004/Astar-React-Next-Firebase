@@ -49,6 +49,7 @@ const AdminMonthlyMessages = lazy(() => import("@/pages/admin/MonthlyMessages"))
 const AdminBlog = lazy(() => import("@/pages/admin/Blog"));
 const AdminReports = lazy(() => import("@/pages/admin/Reports"));
 const AdminKnowledgeBase = lazy(() => import("@/pages/admin/KnowledgeBase"));
+const AdminBirthChartInterpretations = lazy(() => import("@/pages/admin/BirthChartInterpretations"));
 const AdminOrders = lazy(() => import("@/pages/admin/Orders"));
 const AdminNotifications = lazy(() => import("@/pages/admin/Notifications"));
 const AdminProfile = lazy(() => import("@/pages/admin/Profile"));
@@ -111,6 +112,7 @@ const App = () => (
                   <Route path="blog" element={<AdminBlog />} />
                   <Route path="reports" element={<AdminReports />} />
                   <Route path="knowledge-base" element={<AdminKnowledgeBase />} />
+                  <Route path="birth-chart-interpretations" element={<AdminBirthChartInterpretations />} />
                   <Route path="orders" element={<AdminOrders />} />
                   <Route path="notifications" element={<AdminNotifications />} />
                   <Route path="profile" element={<AdminProfile />} />

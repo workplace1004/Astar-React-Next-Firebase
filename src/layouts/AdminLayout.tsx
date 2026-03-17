@@ -2,7 +2,7 @@ import { Outlet, Navigate, NavLink, Link, useNavigate, useLocation } from "react
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminNotifications } from "@/contexts/AdminNotificationsContext";
 import { AdminNotificationsProvider } from "@/contexts/AdminNotificationsContext";
-import { LayoutDashboard, Users, HelpCircle, Mail, FileText, BookOpen, Database, CreditCard, LogOut, Menu, Bell, Settings, User } from "lucide-react";
+import { LayoutDashboard, Users, HelpCircle, Mail, FileText, BookOpen, Database, CreditCard, LogOut, Menu, Bell, Settings, User, Sun } from "lucide-react";
 import { useState } from "react";
 import ThemeToggle from "@/components/landing/ThemeToggle";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -18,6 +18,7 @@ const navItems = [
   { to: "/admin/blog", icon: FileText, label: "Blog" },
   { to: "/admin/reports", icon: BookOpen, label: "Reportes" },
   { to: "/admin/knowledge-base", icon: Database, label: "Base de Conocimiento" },
+  { to: "/admin/birth-chart-interpretations", icon: Sun, label: "Interpretaciones Carta" },
   { to: "/admin/orders", icon: CreditCard, label: "Pedidos" },
 ];
 
@@ -29,6 +30,7 @@ const pageMeta: Record<string, { title: string; subtitle: string }> = {
   "/admin/blog": { title: "Gestión de Blog", subtitle: "Crea, edita y publica artículos" },
   "/admin/reports": { title: "Gestión de Reportes", subtitle: "Genera, edita y revisa reportes de usuarios" },
   "/admin/knowledge-base": { title: "Base de Conocimiento", subtitle: "Reglas de interpretación simbólica para la IA" },
+  "/admin/birth-chart-interpretations": { title: "Interpretaciones Carta Natal", subtitle: "Edita textos de Sol, Luna y Ascendente por signo" },
   "/admin/orders": { title: "Pedidos y Pagos", subtitle: "Historial de todas las transacciones" },
   "/admin/notifications": { title: "Notificaciones", subtitle: "Todas las notificaciones del sistema" },
   "/admin/profile": { title: "Mi Perfil", subtitle: "Información de tu cuenta" },

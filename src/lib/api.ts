@@ -359,6 +359,35 @@ export async function adminDeleteKnowledgeEntry(entryId: string): Promise<boolea
   return res.ok;
 }
 
+export type BirthChartInterpretationType = "sun" | "moon" | "ascendant";
+
+export interface AdminBirthChartInterpretationItem {
+  id: string;
+  type: BirthChartInterpretationType;
+  sign: string;
+  description: string;
+  updatedAt: string;
+}
+
+export async function adminGetBirthChartInterpretations(): Promise<AdminBirthChartInterpretationItem[]> {
+  const res = await fetch(`${API_BASE}/admin/birth-chart-interpretations`, { headers: authHeaders() });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function adminUpdateBirthChartInterpretation(
+  id: string,
+  description: string
+): Promise<AdminBirthChartInterpretationItem | null> {
+  const res = await fetch(`${API_BASE}/admin/birth-chart-interpretations/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: authHeaders(),
+    body: JSON.stringify({ description: description.trim() }),
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
 export interface AdminQuestionItem {
   id: string;
   user: string;
