@@ -12,6 +12,31 @@ import { apiBirthChartPreview, type BirthChartPreviewResult } from "@/lib/api";
 interface CitySuggestion {
   id: string;
   label: string;
+  lat: number;
+  lon: number;
+  timezone?: string;
+}
+
+function computeTimezoneOffsetHours(dateIso: string, time24: string, timeZone?: string): number | undefined {
+  if (!timeZone) return undefined;
+  const [y, m, d] = dateIso.split("-").map(Number);
+  const [hh, mm] = time24.split(":").map(Number);
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return undefined;
+  const utcDate = new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1, Number.isFinite(hh) ? hh : 12, Number.isFinite(mm) ? mm : 0));
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    timeZoneName: "shortOffset",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(utcDate);
+  const offsetPart = parts.find((p) => p.type === "timeZoneName")?.value ?? "";
+  const match = offsetPart.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/i);
+  if (!match) return undefined;
+  const sign = match[1] === "-" ? -1 : 1;
+  const hours = parseInt(match[2] ?? "0", 10);
+  const minutes = parseInt(match[3] ?? "0", 10);
+  return sign * (hours + minutes / 60);
 }
 
 const BirthChartPreview = () => {
@@ -24,7 +49,7 @@ const BirthChartPreview = () => {
   const [citySuggestions, setCitySuggestions] = useState<CitySuggestion[]>([]);
   const [cityOpen, setCityOpen] = useState(false);
   const [cityLoading, setCityLoading] = useState(false);
-  const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
+  const [selectedCity, setSelectedCity] = useState<CitySuggestion | null>(null);
   const [result, setResult] = useState<BirthChartPreviewResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,14 +77,20 @@ const BirthChartPreview = () => {
         });
         const data = await res.json().catch(() => ({}));
         const list = Array.isArray((data as { results?: unknown[] }).results)
-          ? ((data as { results: Array<{ name?: string; admin1?: string; country?: string; latitude?: number; longitude?: number }> }).results)
+          ? ((data as { results: Array<{ name?: string; admin1?: string; country?: string; latitude?: number; longitude?: number; timezone?: string }> }).results)
           : [];
         const mapped = list
-          .filter((item) => typeof item.name === "string" && typeof item.country === "string")
+          .filter((item) => typeof item.name === "string" && typeof item.country === "string" && typeof item.latitude === "number" && typeof item.longitude === "number")
           .map((item, index) => {
             const label = `${item.name}${item.admin1 ? `, ${item.admin1}` : ""}, ${item.country}`;
             const id = `${label}-${item.latitude ?? "na"}-${item.longitude ?? "na"}-${index}`;
-            return { id, label };
+            return {
+              id,
+              label,
+              lat: item.latitude as number,
+              lon: item.longitude as number,
+              timezone: item.timezone,
+            };
           });
         setCitySuggestions(mapped);
       } catch {
@@ -83,7 +114,7 @@ const BirthChartPreview = () => {
       setError("Indica tu fecha de nacimiento.");
       return;
     }
-    if (!birthPlace.trim() || !selectedCityId) {
+    if (!birthPlace.trim() || !selectedCity) {
       setError("Selecciona tu ciudad desde la lista de sugerencias.");
       return;
     }
@@ -91,13 +122,19 @@ const BirthChartPreview = () => {
       setError("Ingresa tu email.");
       return;
     }
+    const birthTimeValue = birthTime.trim() || "12:00";
+    const tzone = computeTimezoneOffsetHours(birthDate.trim(), birthTimeValue, selectedCity.timezone);
+
     setLoading(true);
     try {
       const data = await apiBirthChartPreview({
         birthDate: birthDate.trim(),
-        birthTime: birthTime.trim() || "12:00",
+        birthTime: birthTimeValue,
         birthPlace: birthPlace.trim(),
         email: email.trim().toLowerCase(),
+        lat: selectedCity.lat,
+        lon: selectedCity.lon,
+        tzone,
       });
       setResult(data);
     } catch (err) {
@@ -202,7 +239,7 @@ const BirthChartPreview = () => {
                     const value = e.target.value;
                     setCityInput(value);
                     setBirthPlace(value);
-                    setSelectedCityId(null);
+                    setSelectedCity(null);
                     setCityOpen(true);
                   }}
                   className="w-full px-4 py-3  rounded-xl placeholder:text-gray-400 bg-background/80 border border-border text-base text-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/30 outline-none transition-all"
@@ -227,12 +264,12 @@ const BirthChartPreview = () => {
                               onClick={() => {
                                 setCityInput(city.label);
                                 setBirthPlace(city.label);
-                                setSelectedCityId(city.id);
+                                setSelectedCity(city);
                                 setCityOpen(false);
                               }}
                               className={cn(
                                 "w-full text-left px-3 py-2 text-sm hover:bg-primary/10 transition-colors",
-                                selectedCityId === city.id ? "bg-primary/15 text-foreground" : "text-muted-foreground"
+                                selectedCity?.id === city.id ? "bg-primary/15 text-foreground" : "text-muted-foreground"
                               )}
                             >
                               {city.label}
@@ -284,32 +321,50 @@ const BirthChartPreview = () => {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="grid md:grid-cols-3 gap-6"
+            className="space-y-6"
           >
-            {[
-              { key: "sun" as const, icon: Sun, title: "Sol" },
-              { key: "moon" as const, icon: Moon, title: "Luna" },
-              { key: "ascendant" as const, icon: ArrowUpCircle, title: "Ascendente" },
-            ].map(({ key, icon: Icon, title }) => {
-              const item = result[key];
-              return (
-                <motion.div
-                  key={key}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.1 }}
-                  className="p-6 rounded-2xl glass-card border border-border/80 premium-shadow hover:border-primary/30 transition-all duration-300"
-                >
-                  <div className="flex items-center gap-3 mb-4">
-                    <Icon className="w-6 h-6 text-primary" />
-                    <h3 className="font-serif text-xl font-medium">{title}</h3>
-                  </div>
-                  <p className="text-2xl text-primary mb-2" aria-hidden>{item.symbol}</p>
-                  <p className="font-medium text-foreground mb-3">{item.sign}</p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
-                </motion.div>
-              );
-            })}
+            {result.chartUrl && (
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="p-4 rounded-2xl glass-card border border-border/80 premium-shadow"
+              >
+                <p className="text-sm uppercase tracking-widest text-primary mb-3">Dibujo de tu carta astral</p>
+                <img
+                  src={result.chartUrl}
+                  alt="Dibujo de carta astral"
+                  className="w-full max-w-3xl mx-auto rounded-xl border border-border/40 bg-card"
+                  loading="lazy"
+                />
+              </motion.div>
+            )}
+            <div className="grid md:grid-cols-3 gap-6">
+              {[
+                { key: "sun" as const, icon: Sun, title: "Sol" },
+                { key: "moon" as const, icon: Moon, title: "Luna" },
+                { key: "ascendant" as const, icon: ArrowUpCircle, title: "Ascendente" },
+              ].map(({ key, icon: Icon, title }) => {
+                const item = result[key];
+                return (
+                  <motion.div
+                    key={key}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.1 }}
+                    className="p-6 rounded-2xl glass-card border border-border/80 premium-shadow hover:border-primary/30 transition-all duration-300"
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <Icon className="w-6 h-6 text-primary" />
+                      <h3 className="font-serif text-xl font-medium">{title}</h3>
+                    </div>
+                    <p className="text-2xl text-primary mb-2" aria-hidden>{item.symbol}</p>
+                    <p className="font-medium text-foreground mb-3">{item.sign}</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
+                  </motion.div>
+                );
+              })}
+            </div>
           </motion.div>
         )}
       </div>
