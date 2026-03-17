@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { LayoutDashboard, Users, CreditCard, HelpCircle, Mail, Loader2, FileText, BookOpen, ShoppingCart, Activity } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, HelpCircle, Mail, FileText, BookOpen, ShoppingCart, Activity } from "lucide-react";
 import { useState, useEffect, useMemo, type CSSProperties } from "react";
 import {
   PieChart,
@@ -27,6 +27,7 @@ import {
   type AdminStats,
 } from "@/lib/api";
 import EmptyState from "@/components/EmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const subscriptionPieColors = {
   Activas: "hsl(38, 70%, 55%)",
@@ -98,15 +99,37 @@ const AdminDashboard = () => {
   const [blogPosts, setBlogPosts] = useState<{ status: string }[]>([]);
   const [questions, setQuestions] = useState<{ status: string }[]>([]);
   const [reports, setReports] = useState<{ type: string }[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    adminGetStats()
-      .then(setStats)
-      .catch((e) => setStatsError(e instanceof Error ? e.message : "Error al cargar estadísticas"));
-    adminGetOrders().then((o) => setOrders(o));
-    adminGetBlogPosts().then((p) => setBlogPosts(p));
-    adminGetQuestions().then((q) => setQuestions(q));
-    adminGetReports().then((r) => setReports(r));
+    let alive = true;
+    const load = async () => {
+      setIsLoading(true);
+      const [statsRes, ordersRes, blogRes, questionsRes, reportsRes] = await Promise.allSettled([
+        adminGetStats(),
+        adminGetOrders(),
+        adminGetBlogPosts(),
+        adminGetQuestions(),
+        adminGetReports(),
+      ]);
+      if (!alive) return;
+
+      if (statsRes.status === "fulfilled") {
+        setStats(statsRes.value);
+        setStatsError(null);
+      } else {
+        setStatsError(statsRes.reason instanceof Error ? statsRes.reason.message : "Error al cargar estadísticas");
+      }
+      setOrders(ordersRes.status === "fulfilled" ? ordersRes.value : []);
+      setBlogPosts(blogRes.status === "fulfilled" ? blogRes.value : []);
+      setQuestions(questionsRes.status === "fulfilled" ? questionsRes.value : []);
+      setReports(reportsRes.status === "fulfilled" ? reportsRes.value : []);
+      setIsLoading(false);
+    };
+    load();
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const kpiCards = stats
@@ -241,6 +264,59 @@ const AdminDashboard = () => {
   const totalReports = reports.length;
   const hasExtraData = totalOrders > 0 || totalBlog > 0 || totalQuestions > 0 || totalReports > 0;
   const usage = stats?.astrologyApiUsage;
+  const usageChartData = useMemo(
+    () =>
+      usage
+        ? [
+            {
+              name: "Previews",
+              total: usage.previewsTotal,
+              mes: usage.previewsThisMonth,
+            },
+            {
+              name: "Llamadas",
+              total: usage.providerCallsEstimatedTotal,
+              mes: usage.providerCallsEstimatedThisMonth,
+            },
+          ]
+        : [],
+    [usage],
+  );
+
+  if (isLoading) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="glass-card rounded-2xl p-6 premium-shadow space-y-3">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-3 w-32" />
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="glass-card rounded-2xl p-6 premium-shadow space-y-4">
+            <Skeleton className="h-5 w-56" />
+            <Skeleton className="h-[240px] w-full rounded-xl" />
+          </div>
+          <div className="glass-card rounded-2xl p-6 premium-shadow space-y-4">
+            <Skeleton className="h-5 w-56" />
+            <Skeleton className="h-[240px] w-full rounded-xl" />
+          </div>
+        </div>
+        <div className="glass-card rounded-2xl p-6 premium-shadow space-y-4">
+          <Skeleton className="h-5 w-64" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-20 w-full rounded-xl" />
+            ))}
+          </div>
+          <Skeleton className="h-[220px] w-full rounded-xl" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -252,27 +328,21 @@ const AdminDashboard = () => {
 
       {/* KPI cards - Users & Subscriptions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats === null && !statsError ? (
-          <div className="col-span-full flex items-center justify-center py-12 text-muted-foreground">
-            <Loader2 className="w-8 h-8 animate-spin" />
-          </div>
-        ) : (
-          kpiCards.map((s, i) => (
-            <motion.div
-              key={s.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="glass-card rounded-2xl p-6 premium-shadow"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <s.icon className="w-5 h-5 text-primary" />
-              </div>
-              <p className="font-sans text-3xl text-foreground tabular-nums">{s.value}</p>
-              <p className="text-sm text-muted-foreground">{s.label}</p>
-            </motion.div>
-          ))
-        )}
+        {kpiCards.map((s, i) => (
+          <motion.div
+            key={s.label}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className="glass-card rounded-2xl p-6 premium-shadow"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <s.icon className="w-5 h-5 text-primary" />
+            </div>
+            <p className="font-sans text-3xl text-foreground tabular-nums">{s.value}</p>
+            <p className="text-sm text-muted-foreground">{s.label}</p>
+          </motion.div>
+        ))}
       </div>
 
       {/* KPI cards - Orders, Blog, Questions, Reports */}
@@ -653,6 +723,30 @@ const AdminDashboard = () => {
           <p className="text-xs text-muted-foreground mt-3">
             Estimación interna: 1 preview = 2 llamadas al proveedor (`natal_wheel_chart` + `planets/tropical`).
           </p>
+          {usageChartData.length > 0 && (
+            <div className="mt-4">
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={usageChartData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(225, 15%, 18%)" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="hsl(225, 15%, 45%)" />
+                  <YAxis tick={{ fontSize: 12 }} stroke="hsl(225, 15%, 45%)" />
+                  <Tooltip
+                    content={(props) => (
+                      <DashboardTooltip
+                        active={props.active}
+                        payload={props.payload as TooltipPayloadItem[]}
+                        label={props.label}
+                        formatter={(value, name) => [String(value), name === "mes" ? "Este mes" : "Total"]}
+                      />
+                    )}
+                  />
+                  <Legend />
+                  <Bar dataKey="total" name="Total" fill={CHART_COLORS.secondary} radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="mes" name="Este mes" fill={CHART_COLORS.primary} radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </motion.div>
       )}
     </div>
