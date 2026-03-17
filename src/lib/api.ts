@@ -189,6 +189,12 @@ export interface AdminStats {
   activeSubscriptions: number;
   inactiveSubscriptions: number;
   cancelledSubscriptions: number;
+  astrologyApiUsage?: {
+    previewsTotal: number;
+    previewsThisMonth: number;
+    providerCallsEstimatedTotal: number;
+    providerCallsEstimatedThisMonth: number;
+  };
 }
 
 export async function adminGetStats(): Promise<AdminStats> {

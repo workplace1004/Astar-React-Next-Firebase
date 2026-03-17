@@ -5,6 +5,7 @@ import { format, parse } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
 import TimePicker from "@/components/ui/time-picker";
 import { cn } from "@/lib/utils";
 import { apiBirthChartPreview, type BirthChartPreviewResult } from "@/lib/api";
@@ -300,36 +301,39 @@ const BirthChartPreview = () => {
           </button>
         </motion.form>
 
-        {loading ? (
+        {loading && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35 }}
             className="space-y-6"
           >
             <div className="p-4 rounded-2xl glass-card border border-border/80 premium-shadow">
-              <div className="h-4 w-56 bg-primary/20 rounded mb-4 animate-pulse" />
-              <div className="w-full max-w-3xl mx-auto rounded-xl border border-border/40 bg-card/40 h-[320px] md:h-[520px] animate-pulse" />
+              <p className="text-sm uppercase tracking-widest text-primary mb-3">Generando tu carta astral...</p>
+              <Skeleton className="w-full max-w-3xl h-[320px] md:h-[420px] mx-auto rounded-xl border border-border/40" />
             </div>
             <div className="grid md:grid-cols-3 gap-6">
-              {[0, 1, 2].map((idx) => (
+              {[0, 1, 2].map((index) => (
                 <div
-                  key={idx}
-                  className="p-6 rounded-2xl glass-card border border-border/80 premium-shadow animate-pulse"
+                  key={`skeleton-${index}`}
+                  className="p-6 rounded-2xl glass-card border border-border/80 premium-shadow"
                 >
-                  <div className="h-6 w-28 bg-primary/20 rounded mb-4" />
-                  <div className="h-7 w-10 bg-primary/25 rounded mb-3" />
-                  <div className="h-5 w-24 bg-foreground/10 rounded mb-3" />
-                  <div className="space-y-2">
-                    <div className="h-3 w-full bg-foreground/10 rounded" />
-                    <div className="h-3 w-full bg-foreground/10 rounded" />
-                    <div className="h-3 w-3/4 bg-foreground/10 rounded" />
+                  <div className="flex items-center gap-3 mb-4">
+                    <Skeleton className="w-6 h-6 rounded-full" />
+                    <Skeleton className="h-6 w-28" />
                   </div>
+                  <Skeleton className="h-8 w-10 mb-3" />
+                  <Skeleton className="h-5 w-24 mb-4" />
+                  <Skeleton className="h-4 w-full mb-2" />
+                  <Skeleton className="h-4 w-[92%] mb-2" />
+                  <Skeleton className="h-4 w-[84%]" />
                 </div>
               ))}
             </div>
           </motion.div>
-        ) : result ? (
+        )}
+
+        {!loading && result && (
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -377,7 +381,7 @@ const BirthChartPreview = () => {
               })}
             </div>
           </motion.div>
-        ) : null}
+        )}
       </div>
     </section>
   );

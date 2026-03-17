@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { LayoutDashboard, Users, CreditCard, HelpCircle, Mail, Loader2, FileText, BookOpen, ShoppingCart } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, HelpCircle, Mail, Loader2, FileText, BookOpen, ShoppingCart, Activity } from "lucide-react";
 import { useState, useEffect, useMemo, type CSSProperties } from "react";
 import {
   PieChart,
@@ -240,6 +240,7 @@ const AdminDashboard = () => {
   const totalQuestions = questions.length;
   const totalReports = reports.length;
   const hasExtraData = totalOrders > 0 || totalBlog > 0 || totalQuestions > 0 || totalReports > 0;
+  const usage = stats?.astrologyApiUsage;
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -618,6 +619,41 @@ const AdminDashboard = () => {
             </div>
           )}
         </>
+      )}
+
+      {stats !== null && usage && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="glass-card rounded-2xl p-6 premium-shadow"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <Activity className="w-5 h-5 text-primary" />
+            <h3 className="font-serif text-lg text-foreground">Uso API astrológica (estimado)</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="rounded-xl border border-border/40 bg-background/30 p-4">
+              <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Previews total</p>
+              <p className="text-2xl text-foreground tabular-nums">{usage.previewsTotal}</p>
+            </div>
+            <div className="rounded-xl border border-border/40 bg-background/30 p-4">
+              <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Previews este mes</p>
+              <p className="text-2xl text-foreground tabular-nums">{usage.previewsThisMonth}</p>
+            </div>
+            <div className="rounded-xl border border-border/40 bg-background/30 p-4">
+              <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Llamadas total</p>
+              <p className="text-2xl text-foreground tabular-nums">{usage.providerCallsEstimatedTotal}</p>
+            </div>
+            <div className="rounded-xl border border-border/40 bg-background/30 p-4">
+              <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Llamadas este mes</p>
+              <p className="text-2xl text-foreground tabular-nums">{usage.providerCallsEstimatedThisMonth}</p>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            Estimación interna: 1 preview = 2 llamadas al proveedor (`natal_wheel_chart` + `planets/tropical`).
+          </p>
+        </motion.div>
       )}
     </div>
   );
