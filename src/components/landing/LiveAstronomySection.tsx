@@ -61,6 +61,14 @@ function formatDegrees(value: number): string {
   return `${normalizeLongitude(value).toFixed(2)}°`;
 }
 
+function degreesInSign(value: number): number {
+  return normalizeLongitude(value) % 30;
+}
+
+function formatDegreesInSign(value: number): string {
+  return `${degreesInSign(value).toFixed(2)}°`;
+}
+
 function calculateSnapshot(now: Date): {
   planets: PlanetRow[];
   moonLongitude: number;
@@ -130,7 +138,9 @@ export default function LiveAstronomySection() {
                 <p className="text-xs tracking-widest uppercase">Ubicacion Luna</p>
               </div>
               <p className="text-xl font-semibold text-foreground">{data.moonZodiac}</p>
-              <p className="text-sm text-muted-foreground mt-1">Longitud: {formatDegrees(data.moonLongitude)}</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Longitud: {formatDegreesInSign(data.moonLongitude)} ({formatDegrees(data.moonLongitude)} total)
+              </p>
             </div>
             <div className="rounded-xl border border-border/40 bg-background/40 p-4">
               <div className="flex items-center gap-2 mb-2 text-primary">
@@ -155,7 +165,7 @@ export default function LiveAstronomySection() {
           <div className="rounded-xl border border-border/40 overflow-hidden">
             <div className="grid grid-cols-3 px-4 py-3 text-xs uppercase tracking-widest text-muted-foreground border-b border-border/40 bg-background/30">
               <span>Planeta</span>
-              <span className="text-center">Longitud</span>
+              <span className="text-center">Grado en signo</span>
               <span className="text-right">Signo</span>
             </div>
             <div>
@@ -165,7 +175,12 @@ export default function LiveAstronomySection() {
                   className="grid grid-cols-3 px-4 py-3 text-sm border-b border-border/20 last:border-0"
                 >
                   <span className="text-foreground">{planet.name}</span>
-                  <span className="text-center text-foreground tabular-nums">{formatDegrees(planet.longitude)}</span>
+                  <span
+                    className="text-center text-foreground tabular-nums"
+                    title={`Longitud total: ${formatDegrees(planet.longitude)}`}
+                  >
+                    {formatDegreesInSign(planet.longitude)}
+                  </span>
                   <span className="text-right text-primary">{planet.zodiac}</span>
                 </div>
               ))}
