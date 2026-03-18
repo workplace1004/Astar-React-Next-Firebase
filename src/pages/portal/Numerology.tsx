@@ -67,7 +67,7 @@ const Numerology = () => {
           {numbers.map((n, i) => (
             <motion.div key={n.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + i * 0.05 }} className="glass-card rounded-2xl p-6 premium-shadow text-center">
               <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-3">
-                <span className="font-serif text-3xl text-primary">{n.number}</span>
+                <span className="font-sans text-3xl text-primary">{n.number}</span>
               </div>
               <p className="text-xs tracking-widest uppercase text-primary mb-1">{n.label}</p>
               <p className="text-muted-foreground text-xs">{n.desc}</p>
