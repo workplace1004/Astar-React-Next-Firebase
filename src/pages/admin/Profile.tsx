@@ -6,6 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import {
+  DEFAULT_ASTAR_CONTENT_STYLE_CONFIG,
+  getAstarContentStyleConfig,
+  hydrateAstarContentStyleConfigFromAdminApi,
+  saveAstarContentStyleConfig,
+  saveAstarContentStyleConfigToAdminApi,
+  type AstarContentStyleConfig,
+  type PreviewPillarKey,
+  type ReportStyleKey,
+} from "@/lib/contentStyleConfig";
 
 const AdminProfile = () => {
   const { user, updateProfile, changePassword } = useAuth();
@@ -27,6 +37,9 @@ const AdminProfile = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [contentStyleConfig, setContentStyleConfig] = useState<AstarContentStyleConfig>(() => getAstarContentStyleConfig());
+  const [savingContentStyle, setSavingContentStyle] = useState(false);
+  const [loadingContentStyle, setLoadingContentStyle] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -35,6 +48,22 @@ const AdminProfile = () => {
       setAvatarUrl(user.avatarUrl ?? null);
     }
   }, [user?.uid, user?.name, user?.email, user?.avatarUrl]);
+
+  useEffect(() => {
+    let active = true;
+    setLoadingContentStyle(true);
+    void hydrateAstarContentStyleConfigFromAdminApi()
+      .then((config) => {
+        if (!active) return;
+        setContentStyleConfig(config);
+      })
+      .finally(() => {
+        if (active) setLoadingContentStyle(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -109,6 +138,58 @@ const AdminProfile = () => {
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
+  };
+
+  const updateReportTemplate = (key: ReportStyleKey, field: "intro" | "closing", value: string) => {
+    setContentStyleConfig((prev) => ({
+      ...prev,
+      reportTemplates: {
+        ...prev.reportTemplates,
+        [key]: {
+          ...prev.reportTemplates[key],
+          [field]: value,
+        },
+      },
+    }));
+  };
+
+  const updatePreviewTemplate = (key: PreviewPillarKey, value: string) => {
+    setContentStyleConfig((prev) => ({
+      ...prev,
+      previewTemplates: {
+        ...prev.previewTemplates,
+        [key]: { intro: value },
+      },
+    }));
+  };
+
+  const handleSaveContentStyle = async () => {
+    setSavingContentStyle(true);
+    try {
+      const saved = await saveAstarContentStyleConfigToAdminApi(contentStyleConfig);
+      setContentStyleConfig(saved);
+      toast.success("Plantillas de contenido Astar guardadas.");
+    } catch {
+      saveAstarContentStyleConfig(contentStyleConfig);
+      toast.error("No se pudo sincronizar con servidor. Se guardo localmente en este navegador.");
+    } finally {
+      setSavingContentStyle(false);
+    }
+  };
+
+  const handleResetContentStyle = async () => {
+    setSavingContentStyle(true);
+    try {
+      const reset = await saveAstarContentStyleConfigToAdminApi(DEFAULT_ASTAR_CONTENT_STYLE_CONFIG);
+      setContentStyleConfig(reset);
+      toast.success("Plantillas restablecidas a valores por defecto.");
+    } catch {
+      saveAstarContentStyleConfig(DEFAULT_ASTAR_CONTENT_STYLE_CONFIG);
+      setContentStyleConfig(DEFAULT_ASTAR_CONTENT_STYLE_CONFIG);
+      toast.error("No se pudo sincronizar con servidor. Se restablecio solo en este navegador.");
+    } finally {
+      setSavingContentStyle(false);
+    }
   };
 
   return (
@@ -210,6 +291,77 @@ const AdminProfile = () => {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Astar content style templates */}
+      <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm">
+        <div className="px-6 py-4 border-b border-border/20">
+          <p className="text-sm font-medium text-foreground">Plantillas de Contenido Astar</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Edita el tono base para reportes y preview. Se sincroniza con servidor cuando esta disponible.
+          </p>
+        </div>
+        <div className="p-6 space-y-6">
+          {loadingContentStyle && (
+            <p className="text-xs text-muted-foreground">Cargando configuracion actual...</p>
+          )}
+          {(["birth_chart", "solar_return", "numerology"] as ReportStyleKey[]).map((type) => (
+            <div key={type} className="space-y-3 rounded-xl border border-border/30 p-4">
+              <p className="text-sm font-medium text-foreground">
+                {type === "birth_chart" ? "Carta Natal" : type === "solar_return" ? "Revolución Solar" : "Numerología"}
+              </p>
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Introducción</Label>
+                <textarea
+                  value={contentStyleConfig.reportTemplates[type].intro}
+                  onChange={(e) => updateReportTemplate(type, "intro", e.target.value)}
+                  rows={2}
+                  className="w-full px-3 py-2 rounded-lg bg-background/60 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 resize-y"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Cierre (usa `{"{{section}}"}` para el nombre de sección)</Label>
+                <textarea
+                  value={contentStyleConfig.reportTemplates[type].closing}
+                  onChange={(e) => updateReportTemplate(type, "closing", e.target.value)}
+                  rows={2}
+                  className="w-full px-3 py-2 rounded-lg bg-background/60 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 resize-y"
+                />
+              </div>
+            </div>
+          ))}
+
+          <div className="space-y-3 rounded-xl border border-border/30 p-4">
+            <p className="text-sm font-medium text-foreground">Preview público (Sol, Luna, Ascendente)</p>
+            {(["Sol", "Luna", "Ascendente"] as PreviewPillarKey[]).map((pillar) => (
+              <div key={pillar} className="space-y-2">
+                <Label className="text-muted-foreground">{pillar}</Label>
+                <textarea
+                  value={contentStyleConfig.previewTemplates[pillar].intro}
+                  onChange={(e) => updatePreviewTemplate(pillar, e.target.value)}
+                  rows={2}
+                  className="w-full px-3 py-2 rounded-lg bg-background/60 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 resize-y"
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-3">
+            <Button onClick={handleSaveContentStyle} disabled={savingContentStyle} className="gap-1.5">
+              {savingContentStyle ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Guardando…
+                </>
+              ) : (
+                "Guardar plantillas"
+              )}
+            </Button>
+            <Button variant="outline" onClick={handleResetContentStyle} disabled={savingContentStyle}>
+              Restablecer por defecto
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Password Reset */}

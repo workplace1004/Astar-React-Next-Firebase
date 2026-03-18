@@ -1,9 +1,10 @@
 import { motion } from "framer-motion";
 import { ArrowLeft, Loader2, Hash } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { portalGetReportByType } from "@/lib/api";
 import EmptyState from "@/components/EmptyState";
+import { buildPortalInterpretation } from "@/lib/interpretations";
 
 const Numerology = () => {
   const [report, setReport] = useState<{ id: string; type: string; title: string; content: string | null } | null>(null);
@@ -15,6 +16,16 @@ const Numerology = () => {
       setLoading(false);
     });
   }, []);
+
+  const interpretation = useMemo(
+    () =>
+      buildPortalInterpretation(report, {
+        reportType: "numerology",
+        defaultSectionTitle: "Interpretación",
+      }),
+    [report],
+  );
+  const interpretations = interpretation.sections;
 
   if (loading) {
     return (
@@ -36,16 +47,12 @@ const Numerology = () => {
   }
 
   let numbers: { number: string; label: string; desc: string }[] = [];
-  let interpretations: { id: string; title: string; content: string }[] = [];
   if (report.content) {
     try {
       const parsed = JSON.parse(report.content);
       if (parsed.numbers) numbers = parsed.numbers;
-      if (parsed.interpretations) interpretations = parsed.interpretations;
-      if (parsed.sections) interpretations = parsed.sections;
-      if (!numbers.length && !interpretations.length) interpretations = [{ id: "main", title: "Interpretación", content: report.content }];
     } catch {
-      interpretations = [{ id: "main", title: "Interpretación completa", content: report.content }];
+      numbers = [];
     }
   }
 
@@ -72,6 +79,11 @@ const Numerology = () => {
       {interpretations.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="glass-card rounded-2xl p-6 premium-shadow">
           <h3 className="font-serif text-xl text-foreground mb-4">Interpretación Completa</h3>
+          {interpretation.usedVendorFallback && (
+            <p className="text-xs text-muted-foreground mb-4">
+              Se muestra la versión base del proveedor porque no se pudo componer texto Astar para este reporte.
+            </p>
+          )}
           <div className="space-y-4">
             {interpretations.map((s) => (
               <div key={s.id} className="border-b border-border/30 last:border-0 pb-4 last:pb-0">

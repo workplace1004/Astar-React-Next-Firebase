@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Sun, Moon, ArrowUpCircle, Loader2, CalendarDays, MapPin } from "lucide-react";
 import { format, parse } from "date-fns";
@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import TimePicker from "@/components/ui/time-picker";
 import { cn } from "@/lib/utils";
 import { apiBirthChartPreview, type BirthChartPreviewResult } from "@/lib/api";
+import { buildPreviewDescription } from "@/lib/interpretations";
 
 interface CitySuggestion {
   id: string;
@@ -17,6 +18,12 @@ interface CitySuggestion {
   lon: number;
   timezone?: string;
 }
+
+const PREVIEW_PILLARS = [
+  { key: "sun" as const, icon: Sun, title: "Sol" as const },
+  { key: "moon" as const, icon: Moon, title: "Luna" as const },
+  { key: "ascendant" as const, icon: ArrowUpCircle, title: "Ascendente" as const },
+];
 
 const BirthChartPreview = () => {
   const [birthDate, setBirthDate] = useState("");
@@ -32,6 +39,23 @@ const BirthChartPreview = () => {
   const [result, setResult] = useState<BirthChartPreviewResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const previewCards = useMemo(() => {
+    if (!result) return [];
+    return PREVIEW_PILLARS.map(({ key, icon, title }) => {
+      const item = result[key];
+      const styled = buildPreviewDescription(item.description, { pillarLabel: title });
+      return {
+        key,
+        icon,
+        title,
+        sign: item.sign,
+        symbol: item.symbol,
+        description: styled.content,
+        usedVendorFallback: styled.usedVendorFallback,
+      };
+    });
+  }, [result]);
 
   useEffect(() => {
     const q = cityInput.trim();
@@ -355,12 +379,7 @@ const BirthChartPreview = () => {
               />
             </motion.div>
             <div className="grid md:grid-cols-3 gap-6">
-              {[
-                { key: "sun" as const, icon: Sun, title: "Sol" },
-                { key: "moon" as const, icon: Moon, title: "Luna" },
-                { key: "ascendant" as const, icon: ArrowUpCircle, title: "Ascendente" },
-              ].map(({ key, icon: Icon, title }) => {
-                const item = result[key];
+              {previewCards.map(({ key, icon: Icon, title, sign, symbol, description, usedVendorFallback }) => {
                 return (
                   <motion.div
                     key={key}
@@ -373,9 +392,14 @@ const BirthChartPreview = () => {
                       <Icon className="w-6 h-6 text-primary" />
                       <h3 className="font-serif text-xl font-medium">{title}</h3>
                     </div>
-                    <p className="text-2xl text-primary mb-2" aria-hidden>{item.symbol}</p>
-                    <p className="font-medium text-foreground mb-3">{item.sign}</p>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
+                    <p className="text-2xl text-primary mb-2" aria-hidden>{symbol}</p>
+                    <p className="font-medium text-foreground mb-3">{sign}</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+                    {usedVendorFallback && (
+                      <p className="text-[11px] text-muted-foreground/80 mt-3">
+                        Mostrando texto base por fallback.
+                      </p>
+                    )}
                   </motion.div>
                 );
               })}

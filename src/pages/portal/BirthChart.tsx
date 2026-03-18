@@ -1,10 +1,11 @@
 import { motion } from "framer-motion";
 import { ArrowLeft, Calendar, Clock, MapPin, Loader2, Sun } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { portalGetReportByType, portalGetProfile } from "@/lib/api";
 import { format, parse } from "date-fns";
 import EmptyState from "@/components/EmptyState";
+import { buildPortalInterpretation } from "@/lib/interpretations";
 
 const BirthChart = () => {
   const [report, setReport] = useState<{ id: string; type: string; title: string; content: string | null } | null>(null);
@@ -18,6 +19,16 @@ const BirthChart = () => {
       setLoading(false);
     });
   }, []);
+
+  const interpretation = useMemo(
+    () =>
+      buildPortalInterpretation(report, {
+        reportType: "birth_chart",
+        defaultSectionTitle: "Interpretación",
+      }),
+    [report],
+  );
+  const sections = interpretation.sections;
 
   if (loading) {
     return (
@@ -42,16 +53,6 @@ const BirthChart = () => {
   const birthDateFormatted = profile?.birthDate ? (() => { try { return format(parse(profile.birthDate, "yyyy-MM-dd", new Date()), "d 'de' MMMM, yyyy"); } catch { return profile.birthDate; } })() : "—";
   const birthTimeFormatted = profile?.birthTime ? `${profile.birthTime} hs` : "—";
   const birthPlaceFormatted = profile?.birthPlace || "—";
-
-  let sections: { id: string; title: string; content: string }[] = [];
-  if (report.content) {
-    try {
-      const parsed = JSON.parse(report.content);
-      sections = Array.isArray(parsed) ? parsed : parsed.sections ? parsed.sections : [{ id: "main", title: "Interpretación", content: report.content }];
-    } catch {
-      sections = [{ id: "main", title: "Interpretación", content: report.content }];
-    }
-  }
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -95,6 +96,11 @@ const BirthChart = () => {
       {sections.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass-card rounded-2xl p-6 premium-shadow">
           <h3 className="font-serif text-xl text-foreground mb-4">Interpretación</h3>
+          {interpretation.usedVendorFallback && (
+            <p className="text-xs text-muted-foreground mb-4">
+              Se muestra la versión base del proveedor porque no se pudo componer texto Astar para este reporte.
+            </p>
+          )}
           <div className="space-y-4">
             {sections.map((s) => (
               <div key={s.id} className="border-b border-border/30 last:border-0 pb-4 last:pb-0">

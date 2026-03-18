@@ -78,6 +78,15 @@ export interface BirthChartPreviewResult {
   chartUrl: string;
 }
 
+export async function apiGetContentStyleConfig(): Promise<unknown | null> {
+  const res = await fetch(`${API_BASE}/birth-chart/content-style`);
+  if (!res.ok) return null;
+  const body = await res.json().catch(() => ({}));
+  const config = (body as { config?: unknown }).config;
+  if (!config || typeof config !== "object" || Array.isArray(config)) return null;
+  return config;
+}
+
 export async function apiBirthChartPreview(data: {
   birthDate: string;
   birthTime: string;
@@ -386,6 +395,28 @@ export async function adminUpdateBirthChartInterpretation(
   });
   if (!res.ok) return null;
   return res.json();
+}
+
+export async function adminGetContentStyleConfig(): Promise<unknown | null> {
+  const res = await fetch(`${API_BASE}/admin/content-style`, { headers: authHeaders() });
+  if (!res.ok) return null;
+  const body = await res.json().catch(() => ({}));
+  const config = (body as { config?: unknown }).config;
+  if (!config || typeof config !== "object" || Array.isArray(config)) return null;
+  return config;
+}
+
+export async function adminUpdateContentStyleConfig(config: unknown): Promise<unknown | null> {
+  const res = await fetch(`${API_BASE}/admin/content-style`, {
+    method: "PATCH",
+    headers: authHeaders(),
+    body: JSON.stringify({ config }),
+  });
+  if (!res.ok) return null;
+  const body = await res.json().catch(() => ({}));
+  const next = (body as { config?: unknown }).config;
+  if (!next || typeof next !== "object" || Array.isArray(next)) return null;
+  return next;
 }
 
 export interface AdminQuestionItem {

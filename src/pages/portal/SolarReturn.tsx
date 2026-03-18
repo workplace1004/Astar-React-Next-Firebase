@@ -1,9 +1,10 @@
 import { motion } from "framer-motion";
 import { ArrowLeft, Sparkles, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { portalGetReportByType } from "@/lib/api";
 import EmptyState from "@/components/EmptyState";
+import { buildPortalInterpretation } from "@/lib/interpretations";
 
 const SolarReturn = () => {
   const [report, setReport] = useState<{ id: string; type: string; title: string; content: string | null } | null>(null);
@@ -15,6 +16,20 @@ const SolarReturn = () => {
       setLoading(false);
     });
   }, []);
+
+  const interpretation = useMemo(
+    () =>
+      buildPortalInterpretation(report, {
+        reportType: "solar_return",
+        defaultSectionTitle: "Interpretación",
+      }),
+    [report],
+  );
+  const sections = interpretation.sections;
+  const theme = {
+    title: interpretation.theme?.title || report?.title || "",
+    subtitle: interpretation.theme?.subtitle || "",
+  };
 
   if (loading) {
     return (
@@ -33,20 +48,6 @@ const SolarReturn = () => {
         <EmptyState icon={Sparkles} message="No hay revolución solar." />
       </div>
     );
-  }
-
-  let sections: { id: string; title: string; content: string }[] = [];
-  let theme = { title: report.title, subtitle: "" };
-  if (report.content) {
-    try {
-      const parsed = JSON.parse(report.content);
-      if (parsed.sections) sections = parsed.sections;
-      else if (Array.isArray(parsed)) sections = parsed;
-      else sections = [{ id: "main", title: "Interpretación", content: report.content }];
-      if (parsed.theme) theme = { ...theme, ...parsed.theme };
-    } catch {
-      sections = [{ id: "main", title: "Interpretación", content: report.content }];
-    }
   }
 
   return (
@@ -77,6 +78,11 @@ const SolarReturn = () => {
       {sections.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass-card rounded-2xl p-6 premium-shadow">
           <h3 className="font-serif text-xl text-foreground mb-4">Interpretación por Áreas</h3>
+          {interpretation.usedVendorFallback && (
+            <p className="text-xs text-muted-foreground mb-4">
+              Se muestra la versión base del proveedor porque no se pudo componer texto Astar para este reporte.
+            </p>
+          )}
           <div className="space-y-4">
             {sections.map((s) => (
               <div key={s.id} className="border-b border-border/30 last:border-0 pb-4 last:pb-0">
