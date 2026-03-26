@@ -6,8 +6,8 @@ import { LANDING_SUBSCRIBE_SECTION_ID } from "@/lib/landingAnchors";
 import { useAuth } from "@/contexts/AuthContext";
 
 /** Sustituir cuando definas precio público (p. ej. desde env o API). */
-const PORTAL_PRICE_MONTHLY = "xx";
-const PORTAL_PRICE_ANNUAL_PER_MONTH = "xx";
+const PORTAL_PRICE_MONTHLY = "29";
+const PORTAL_PRICE_ANNUAL_PER_MONTH = "19";
 
 const PricingSection = () => {
   const { isAuthenticated } = useAuth();
