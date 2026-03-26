@@ -1,186 +1,169 @@
 import { motion } from "framer-motion";
-import { Check, Shield, Star, Crown } from "lucide-react";
+import { Check, Shield, Star } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useState } from "react";
+import { LANDING_SUBSCRIBE_SECTION_ID } from "@/lib/landingAnchors";
+import { useAuth } from "@/contexts/AuthContext";
 
-const plans = [
-  {
-    name: "Essentials",
-    icon: Shield,
-    price: { monthly: 19, annual: 15 },
-    tagline: "Ideal para explorar tu mapa simbólico",
-    cta: "Comenzar mi plan",
-    highlighted: false,
-    features: [
-      "Carta natal completa (acceso permanente)",
-      "Reporte de numerología personal",
-      "Reportes simbólicos base",
-      "Acceso al portal con historial completo",
-      "Soporte comunitario",
-    ],
-  },
-  {
-    name: "Portal",
-    icon: Star,
-    price: { monthly: 39, annual: 29 },
-    tagline: "Guía completa con acompañamiento humano",
-    cta: "Comenzar mi plan",
-    highlighted: true,
-    features: [
-      "Todo de Essentials, más:",
-      "Revolución solar del año en curso",
-      "Mensaje mensual personalizado",
-      "1 pregunta mensual con respuesta humana",
-      "Soporte prioritario por email",
-      "Acceso anticipado a nuevas funciones",
-    ],
-  },
-  {
-    name: "Depth",
-    icon: Crown,
-    price: { monthly: 79, annual: 59 },
-    tagline: "Máxima profundidad con soporte dedicado",
-    cta: "Comenzar mi plan",
-    highlighted: false,
-    features: [
-      "Todo de Portal, más:",
-      "3 preguntas mensuales con respuesta humana",
-      "1 sesión privada por mes",
-      "Reportes simbólicos extendidos",
-      "Guía dedicada",
-      "Agendamiento de sesiones a medida",
-    ],
-  },
-];
+/** Sustituir cuando definas precio público (p. ej. desde env o API). */
+const PORTAL_PRICE_MONTHLY = "xx";
+const PORTAL_PRICE_ANNUAL_PER_MONTH = "xx";
 
 const PricingSection = () => {
+  const { isAuthenticated } = useAuth();
   const [billing, setBilling] = useState<"monthly" | "annual">("monthly");
 
   return (
-    <section id="subscription" className="relative py-32 px-6">
+    <section id={LANDING_SUBSCRIBE_SECTION_ID} className="relative py-24 md:py-32 px-6 scroll-mt-24">
       <div className="absolute inset-0 section-glow pointer-events-none" />
 
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-12"
+          className="text-center mb-10 md:mb-12"
         >
-          <p className="text-sm tracking-[0.3em] uppercase text-primary mb-4">Suscripción Mensual</p>
-          <h2 className="font-serif text-4xl md:text-6xl font-light mb-6">
-            Un espacio
-            <br />
-            <span className="text-gradient-gold italic">que crece contigo</span>
+          <p className="text-sm tracking-[0.3em] uppercase text-primary mb-4">Acceso mensual o anual</p>
+          <h2 className="font-serif text-3xl md:text-5xl lg:text-6xl font-light mb-6">
+            Liberá tu potencial de{" "}
+            <span className="text-gradient-gold italic">crecimiento</span>
           </h2>
-          <p className="text-muted-foreground max-w-xl mx-auto text-lg">
-          Tu vida cambia, tus decisiones cambian, tus ciclos también. Este espacio guarda, interpreta y acompaña cada etapa de tu proceso.
+          <p className="text-muted-foreground max-w-xl mx-auto text-base md:text-lg">
+            Elegí tu plan de acceso mensual para empezar a dar sentido a tu vida.
           </p>
         </motion.div>
 
-        {/* Billing toggle */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.6 }}
-          className="flex items-center justify-center gap-1 mb-16"
+          transition={{ duration: 0.55 }}
+          className="flex items-center justify-center gap-1 mb-12"
         >
           <button
+            type="button"
             onClick={() => setBilling("monthly")}
-            className={`px-6 py-2.5 rounded-full text-sm font-medium tracking-wide transition-all duration-300 ${billing === "monthly"
+            className={`px-5 py-2.5 rounded-full text-sm font-medium tracking-wide transition-all duration-300 ${
+              billing === "monthly"
                 ? "bg-primary/20 border border-primary/50 text-primary"
                 : "border border-border/50 text-muted-foreground hover:text-foreground"
-              }`}
+            }`}
           >
             Pago mensual
           </button>
           <button
+            type="button"
             onClick={() => setBilling("annual")}
-            className={`px-6 py-2.5 rounded-full text-sm font-medium tracking-wide transition-all duration-300 ${billing === "annual"
+            className={`px-5 py-2.5 rounded-full text-sm font-medium tracking-wide transition-all duration-300 ${
+              billing === "annual"
                 ? "bg-primary/20 border border-primary/50 text-primary"
                 : "border border-border/50 text-muted-foreground hover:text-foreground"
-              }`}
+            }`}
           >
             Pago anual
           </button>
         </motion.div>
 
-        {/* Plans grid */}
-        <div className="grid md:grid-cols-3 gap-6">
-          {plans.map((plan, i) => (
-            <motion.div
-              key={plan.name}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.6, delay: i * 0.12 }}
-              whileHover={{ y: -6 }}
-              className={`relative overflow-hidden rounded-2xl p-8 flex flex-col transition-all duration-300 ${plan.highlighted
-                  ? "border-2 border-primary/70 glass-card premium-shadow-lg shadow-[0_0_0_2px_hsl(var(--primary)/0.7),0_0_32px_hsl(var(--primary)/0.24),inset_0_0_0_1px_hsl(var(--primary)/0.7)] before:content-[''] before:absolute before:inset-[6px] before:rounded-[0.85rem] before:border before:border-primary/70 before:pointer-events-none"
-                  : "border border-border/70 glass-card hover:border-primary/30 premium-shadow"
-                }`}
+        <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.55 }}
+            className="rounded-2xl p-8 flex flex-col border border-border/70 glass-card premium-shadow"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-serif text-2xl font-medium">Essentials</h3>
+              <Shield className="w-5 h-5 text-muted-foreground" />
+            </div>
+            <p className="text-3xl font-light text-gradient-gold mb-1">Gratis</p>
+            <p className="text-sm text-muted-foreground mb-8">Para dar los primeros pasos y explorar tu carta astral</p>
+            <Link
+              to="/register"
+              className="w-full py-3.5 rounded-full text-center border border-border text-foreground hover:border-primary/50 hover:bg-primary/5 font-medium tracking-wide text-sm transition-all duration-300 mb-8"
             >
-              {/* Header */}
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="font-serif text-2xl font-medium">{plan.name}</h3>
-                <plan.icon className={`w-5 h-5 ${plan.highlighted ? "text-primary" : "text-muted-foreground"}`} />
-              </div>
+              Acceder
+            </Link>
+            <div className="h-px w-full bg-border/50 mb-8" />
+            <ul className="space-y-3 flex-1">
+              {[
+                "Carta astral de nacimiento",
+                "Informe personal de numerología",
+                "Acceso para empezar a crear tu portal",
+                "Lecturas y documentos simbólicos",
+              ].map((feature) => (
+                <li key={feature} className="flex items-start gap-3 text-sm">
+                  <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                  <span className="text-muted-foreground">{feature}</span>
+                </li>
+              ))}
+            </ul>
+          </motion.div>
 
-              {/* Price */}
-              <div className="mb-2">
-                <motion.span
-                  key={`${plan.name}-${billing}`}
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="font-sans text-5xl font-light text-gradient-gold inline-block tabular-nums"
-                >
-                  ${plan.price[billing]}
-                </motion.span>
-                <span className="text-muted-foreground text-sm ml-2">/ mes</span>
-              </div>
-              <p className="text-sm text-muted-foreground mb-8">{plan.tagline}</p>
-
-              {/* CTA */}
-              <button
-                className={`w-full py-3.5 rounded-full font-medium tracking-wide text-sm transition-all duration-300 mb-8 ${plan.highlighted
-                    ? "shimmer-gold text-primary-foreground hover:opacity-90"
-                    : "border border-border text-foreground hover:border-primary/50 hover:bg-primary/5"
-                  }`}
-              >
-                {plan.cta}
-              </button>
-
-              {/* Divider */}
-              <div className="h-px w-full bg-border/50 mb-8" />
-
-              {/* Features */}
-              <ul className="space-y-3 flex-1">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-3 text-sm">
-                    <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                    <span className="text-muted-foreground">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-          ))}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.55, delay: 0.08 }}
+            whileHover={{ y: -4 }}
+            className="relative overflow-hidden rounded-2xl p-8 flex flex-col border-2 border-primary/70 glass-card premium-shadow-lg shadow-[0_0_0_2px_hsl(var(--primary)/0.5),0_0_28px_hsl(var(--primary)/0.2)]"
+          >
+            <p className="absolute top-4 right-4 text-[10px] uppercase tracking-widest text-primary font-medium">
+              El más popular
+            </p>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-serif text-2xl font-medium pr-16">Portal completo</h3>
+              <Star className="w-5 h-5 text-primary shrink-0" />
+            </div>
+            <div className="mb-2">
+              <span className="font-sans text-4xl md:text-5xl font-light text-gradient-gold tabular-nums">
+                ${billing === "monthly" ? PORTAL_PRICE_MONTHLY : PORTAL_PRICE_ANNUAL_PER_MONTH}
+              </span>
+              <span className="text-muted-foreground text-sm ml-2">/ mes</span>
+            </div>
+            {/* <p className="text-xs text-muted-foreground mb-2">
+              {billing === "annual"
+                ? "Equivalente mensual facturado en pago anual."
+                : "Importe orientativo — actualízalo al publicar."}
+            </p> */}
+            <p className="text-sm text-muted-foreground mb-8">
+              Para obtener profundidad, claridad y orientación humana
+            </p>
+            <Link
+              to={isAuthenticated ? "/portal/subscription" : "/register"}
+              className="w-full py-3.5 rounded-full text-center shimmer-gold text-primary-foreground font-medium tracking-wide text-sm hover:opacity-90 transition-opacity mb-8 block"
+            >
+              Desbloquea el portal completo
+            </Link>
+            <div className="h-px w-full bg-border/50 mb-8" />
+            <ul className="space-y-3 flex-1">
+              {[
+                "Todo lo incluido en Essentials",
+                "Interpretaciones completas de todos los informes",
+                "Explicación clara de tu situación actual (por chat)",
+                "Perspectivas continuas dentro de tu portal",
+                "1 respuesta detallada y personalizada de Carlos por vídeo, audio o por escrito (no IA)",
+              ].map((feature) => (
+                <li key={feature} className="flex items-start gap-3 text-sm">
+                  <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                  <span className="text-muted-foreground">{feature}</span>
+                </li>
+              ))}
+            </ul>
+          </motion.div>
         </div>
 
-        {/* Extra services note */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
+        <motion.p
+          initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-50px" }}
-          transition={{ duration: 0.7, delay: 0.3 }}
-          className="mt-8 p-6 rounded-xl glass-card text-center premium-shadow"
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+          className="mt-8 text-center text-xs text-muted-foreground"
         >
-          <p className="text-sm text-muted-foreground">
-            <span className="text-foreground">¿Necesitas más?</span> Puedes añadir preguntas extra o sesiones privadas como
-            complemento a tu suscripción. · Stripe · Mercado Pago
-          </p>
-        </motion.div>
+          Pagos seguros con Stripe y Mercado Pago.
+        </motion.p>
       </div>
     </section>
   );

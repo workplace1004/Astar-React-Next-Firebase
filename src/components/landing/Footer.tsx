@@ -1,6 +1,6 @@
-import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useTheme } from "next-themes";
+import LandingSubscribeSectionLink from "@/components/landing/LandingSubscribeSectionLink";
 
 const Footer = () => {
   const { resolvedTheme } = useTheme();
@@ -14,23 +14,27 @@ const Footer = () => {
               <img src={logoSrc} alt="Astar" className="h-10 w-auto" />
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
-              Lectura simbólica y acompañamiento humano real. Tu carta natal, numerología y revolución solar — siempre accesibles.
+              Tu portal de lectura simbólica que evoluciona con vos: carta natal, numerología y acompañamiento con criterio
+              humano.
             </p>
           </div>
           <div>
             <p className="text-xs tracking-[0.2em] uppercase text-foreground mb-4 font-medium">Plataforma</p>
             <ul className="space-y-2.5">
-              <li><Link to="/portal-preview" className="text-sm text-muted-foreground hover:text-primary transition-colors">Tu Portal</Link></li>
-              <li><Link to="/subscribe" className="text-sm text-muted-foreground hover:text-primary transition-colors">Suscripción</Link></li>
-              <li><Link to="/how-it-works" className="text-sm text-muted-foreground hover:text-primary transition-colors">Cómo Funciona</Link></li>
+              <li><Link to="/register" className="text-sm text-muted-foreground hover:text-primary transition-colors">Crear cuenta gratis</Link></li>
+              <li>
+                <LandingSubscribeSectionLink className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                  Suscripción
+                </LandingSubscribeSectionLink>
+              </li>
+              <li><a href="/#portal" className="text-sm text-muted-foreground hover:text-primary transition-colors">Qué hay en el portal</a></li>
             </ul>
           </div>
           <div>
             <p className="text-xs tracking-[0.2em] uppercase text-foreground mb-4 font-medium">Recursos</p>
             <ul className="space-y-2.5">
-              <li><Link to="/blog" className="text-sm text-muted-foreground hover:text-primary transition-colors">Blog</Link></li>
-              <li><Link to="/manifesto" className="text-sm text-muted-foreground hover:text-primary transition-colors">Manifiesto</Link></li>
-              <li><Link to="/about" className="text-sm text-muted-foreground hover:text-primary transition-colors">Sobre Nosotros</Link></li>
+              <li><Link to="/blog" className="text-sm text-muted-foreground hover:text-primary transition-colors">Perspectivas</Link></li>
+              <li><Link to="/about" className="text-sm text-muted-foreground hover:text-primary transition-colors">Acerca de Astar</Link></li>
               <li><a href="/5MANUAL%20DE%20MARCA/manual%20grafico1.pdf" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-primary transition-colors">Manual de marca (PDF)</a></li>
             </ul>
           </div>
@@ -45,7 +49,7 @@ const Footer = () => {
         </div>
         <div className="border-t border-border/30 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Astar. Todos los derechos reservados.</p>
-          <p className="text-xs text-muted-foreground">Pagos seguros con Stripe & Mercado Pago</p>
+          <p className="text-xs text-muted-foreground">Pagos seguros con Stripe y Mercado Pago</p>
         </div>
       </div>
     </footer>

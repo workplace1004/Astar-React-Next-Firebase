@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useParams, Link } from "react-router-dom";
+import LandingSubscribeSectionLink from "@/components/landing/LandingSubscribeSectionLink";
 import { ArrowLeft, Calendar, User } from "lucide-react";
 
 const mockArticles: Record<string, { title: string; date: string; author: string; content: string[] }> = {
@@ -53,9 +54,9 @@ const BlogArticle = () => {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-20 glass-card rounded-2xl p-10 text-center premium-shadow">
           <h3 className="font-serif text-2xl text-foreground mb-3">¿Quieres profundizar?</h3>
           <p className="text-muted-foreground mb-6">Suscríbete a Astar y recibe tu lectura personalizada cada mes.</p>
-          <Link to="/subscribe" className="inline-block px-8 py-3 rounded-xl shimmer-gold text-primary-foreground font-medium text-sm tracking-wide">
+          <LandingSubscribeSectionLink className="inline-block px-8 py-3 rounded-xl shimmer-gold text-primary-foreground font-medium text-sm tracking-wide">
             Suscribirme
-          </Link>
+          </LandingSubscribeSectionLink>
         </motion.div>
       </div>
     </section>

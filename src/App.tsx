@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -18,13 +18,11 @@ import AdminLayout from "@/layouts/AdminLayout";
 
 // Lazy-loaded pages
 const Index = lazy(() => import("@/pages/Index"));
-const Manifesto = lazy(() => import("@/pages/Manifesto"));
 const About = lazy(() => import("@/pages/About"));
 const Blog = lazy(() => import("@/pages/Blog"));
 const BlogArticle = lazy(() => import("@/pages/BlogArticle"));
 const PortalPreviewPage = lazy(() => import("@/pages/PortalPreviewPage"));
-const HowItWorksPage = lazy(() => import("@/pages/HowItWorksPage"));
-const Subscribe = lazy(() => import("@/pages/Subscribe"));
+const SubscribeRouteRedirect = lazy(() => import("@/pages/SubscribeRouteRedirect"));
 const Login = lazy(() => import("@/pages/Login"));
 const Register = lazy(() => import("@/pages/Register"));
 
@@ -78,13 +76,14 @@ const App = () => {
                 {/* Public pages - Landing has its own layout */}
                 <Route path="/" element={<Index />} />
                 <Route element={<PublicLayout />}>
-                  <Route path="/manifesto" element={<Manifesto />} />
+                  <Route path="/manifesto" element={<Navigate to="/about" replace />} />
+                  <Route path="/how-it-works" element={<Navigate to="/about" replace />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/blog" element={<Blog />} />
+                  <Route path="/perspectivas" element={<Blog />} />
                   <Route path="/blog/:slug" element={<BlogArticle />} />
                   <Route path="/portal-preview" element={<PortalPreviewPage />} />
-                  <Route path="/how-it-works" element={<HowItWorksPage />} />
-                  <Route path="/subscribe" element={<Subscribe />} />
+                  <Route path="/subscribe" element={<SubscribeRouteRedirect />} />
                 </Route>
 
                 {/* Standalone auth pages */}

@@ -1,10 +1,12 @@
 import { motion } from "framer-motion";
 import { CreditCard, Calendar, Receipt, Loader2, Check, Shield, Star, Crown } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
 import { useSearchParams } from "react-router-dom";
 import {
+  paymentConfirmMercadoPagoPayment,
   paymentConfirmStripeIntent,
+  paymentConfirmStripeSession,
   paymentCreateSubscriptionCheckout,
   portalGetMyOrders,
   portalGetProfile,
@@ -135,15 +137,72 @@ const Subscription = () => {
     });
   }, []);
 
+  const paymentStatus = searchParams.get("status");
+  const paymentProvider = searchParams.get("provider");
+  const paymentReason = searchParams.get("reason");
+  const sessionId = searchParams.get("session_id");
+  const mercadoPagoPaymentId = useMemo(
+    () => searchParams.get("payment_id") ?? searchParams.get("collection_id"),
+    [searchParams],
+  );
+
   useEffect(() => {
-    const provider = searchParams.get("provider");
-    if (provider !== "stripe") return;
-    const clean = new URLSearchParams(searchParams);
-    clean.delete("provider");
-    clean.delete("status");
-    clean.delete("session_id");
-    setSearchParams(clean, { replace: true });
-  }, [searchParams, setSearchParams]);
+    if (loading) return;
+
+    const cleanReturnParams = () => {
+      const clean = new URLSearchParams(searchParams);
+      clean.delete("provider");
+      clean.delete("status");
+      clean.delete("reason");
+      clean.delete("session_id");
+      clean.delete("payment_id");
+      clean.delete("collection_id");
+      setSearchParams(clean, { replace: true });
+    };
+
+    const confirm = async () => {
+      if (paymentStatus === "error") {
+        const reasonMessage: Record<string, string> = {
+          missing_stripe_key: "Stripe no está configurado en backend. Configura STRIPE_SECRET_KEY.",
+          missing_mercadopago_token: "Mercado Pago no está configurado en backend. Configura MERCADOPAGO_ACCESS_TOKEN.",
+        };
+        setActionError(reasonMessage[paymentReason ?? ""] ?? "No se pudo iniciar el checkout.");
+        cleanReturnParams();
+        return;
+      }
+      if (paymentStatus !== "success") return;
+      try {
+        if (paymentProvider === "stripe" && sessionId) {
+          await paymentConfirmStripeSession(sessionId);
+        } else if (paymentProvider === "mercadopago" && mercadoPagoPaymentId) {
+          await paymentConfirmMercadoPagoPayment(mercadoPagoPaymentId);
+        } else {
+          return;
+        }
+        await refreshUser();
+        const [p, o] = await Promise.all([portalGetProfile(), portalGetMyOrders()]);
+        setProfile(p ?? null);
+        setOrders(Array.isArray(o) ? o : []);
+        setActionMessage("Pago confirmado. Tu suscripción está activa.");
+        setActionError(null);
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : "No se pudo confirmar el pago.");
+      } finally {
+        cleanReturnParams();
+      }
+    };
+    void confirm();
+  }, [
+    loading,
+    mercadoPagoPaymentId,
+    paymentProvider,
+    paymentReason,
+    paymentStatus,
+    refreshUser,
+    searchParams,
+    sessionId,
+    setSearchParams,
+  ]);
 
   if (loading) {
     return (

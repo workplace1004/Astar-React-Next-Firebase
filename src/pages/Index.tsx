@@ -1,16 +1,12 @@
 import Navbar from "@/components/landing/Navbar";
 import HeroSection from "@/components/landing/HeroSection";
-import StatsBar from "@/components/landing/StatsBar";
-import LiveAstronomySection from "@/components/landing/LiveAstronomySection";
-import BirthChartPreview from "@/components/landing/BirthChartPreview";
-import HowItWorks from "@/components/landing/HowItWorks";
-import PortalPreview from "@/components/landing/PortalPreview";
-import AccompanimentSection from "@/components/landing/AccompanimentSection";
-import Testimonials from "@/components/landing/Testimonials";
+import CarlosBioSection from "@/components/landing/CarlosBioSection";
 import WhoIsThisFor from "@/components/landing/WhoIsThisFor";
+import PortalPreview from "@/components/landing/PortalPreview";
+import BirthChartPreview from "@/components/landing/BirthChartPreview";
 import PricingSection from "@/components/landing/PricingSection";
+import Testimonials from "@/components/landing/Testimonials";
 import FAQSection from "@/components/landing/FAQSection";
-import NotesSection from "@/components/landing/NotesSection";
 import FinalCTA from "@/components/landing/FinalCTA";
 import Footer from "@/components/landing/Footer";
 import FloatingOrbs from "@/components/landing/FloatingOrbs";
@@ -24,17 +20,13 @@ const Index = () => {
       <div className="relative z-10">
         <Navbar />
         <HeroSection />
-        <StatsBar />
-        <LiveAstronomySection />
-        <BirthChartPreview />
-        <HowItWorks />
-        <PortalPreview />
-        <AccompanimentSection />
-        <Testimonials />
+        <CarlosBioSection variant="landing" id="experiencia" />
         <WhoIsThisFor />
+        <PortalPreview />
+        <BirthChartPreview />
         <PricingSection />
+        <Testimonials />
         <FAQSection />
-        <NotesSection />
         <FinalCTA />
         <Footer />
       </div>

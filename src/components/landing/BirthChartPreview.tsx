@@ -154,7 +154,7 @@ const BirthChartPreview = () => {
   };
 
   return (
-    <section id="preview-carta" className="relative py-24 px-6">
+    <section id="preview-carta" className="relative py-24 px-6 scroll-mt-24">
       <div className="absolute inset-0 section-glow pointer-events-none" />
 
       <div className="max-w-6xl mx-auto">
@@ -165,12 +165,13 @@ const BirthChartPreview = () => {
           transition={{ duration: 0.8 }}
           className="text-center mb-14"
         >
-          <p className="text-sm tracking-[0.3em] uppercase text-primary mb-4">Preview de tu carta</p>
+          <p className="text-sm tracking-[0.3em] uppercase text-primary mb-4">Obtené una carta gratuita</p>
           <h2 className="font-serif text-4xl md:text-5xl font-light mb-6">
-            Un vistazo a tu <span className="text-gradient-gold italic">Sol, Luna y Ascendente</span>
+            Descubrí tu <span className="text-gradient-gold italic">Sol, Luna y Ascendente</span>
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto text-lg">
-            Ingresa tus datos de nacimiento y recibe una breve descripción de estos tres pilares de tu carta natal.
+            Introducí tus datos de nacimiento y recibí de forma gratuita una descripción breve pero reveladora de los
+            tres pilares fundamentales de tu carta natal.
           </p>
         </motion.div>
 
@@ -320,7 +321,7 @@ const BirthChartPreview = () => {
                 Calculando…
               </>
             ) : (
-              "Ver mi preview"
+              "Conseguí tu carta gratuita"
             )}
           </button>
         </motion.form>

@@ -1,10 +1,12 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import heroBg from "@/assets/hero-bg.jpg";
 import Starfield from "./Starfield";
+import { LANDING_SUBSCRIBE_SECTION_ID, scrollToLandingSubscribeSection } from "@/lib/landingAnchors";
 
 const HeroSection = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <section id="inicio" className="relative min-h-screen flex items-center justify-center overflow-hidden scroll-mt-24">
       {/* Background image */}
       <div className="absolute inset-0">
         <img
@@ -30,62 +32,82 @@ const HeroSection = () => {
         <div className="w-[800px] h-[800px] rounded-full border border-primary animate-gentle-rotate" style={{ animationDirection: "reverse", animationDuration: "90s" }} />
       </div>
 
-      <div className="relative z-10 text-center max-w-4xl mx-auto px-6 pt-20">
+      <div className="relative z-10 text-center max-w-4xl mx-auto px-6 pt-24 md:pt-28">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.35 }}
+          className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 mb-8 text-xs sm:text-sm tracking-[0.2em] uppercase text-primary"
+        >
+          <span>Perspectivas simbólicas</span>
+          <span className="hidden sm:inline text-border">·</span>
+          <a
+            href={`#${LANDING_SUBSCRIBE_SECTION_ID}`}
+            onClick={(e) => {
+              e.preventDefault();
+              scrollToLandingSubscribeSection();
+            }}
+            className="hover:text-foreground transition-colors underline-offset-4 hover:underline cursor-pointer"
+          >
+            Consulta con un asesor
+          </a>
+        </motion.div>
+
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.5 }}
-          className="text-sm tracking-[0.3em] uppercase text-primary mb-8"
+          className="text-sm tracking-[0.25em] uppercase text-muted-foreground mb-6"
         >
-          Lectura Simbólica · Acompañamiento Humano
+          Tu portal de lectura que evoluciona contigo
         </motion.p>
 
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.7 }}
-          className="font-serif text-5xl md:text-7xl lg:text-8xl font-light leading-[1.1] mb-8"
+          transition={{ duration: 1, delay: 0.65 }}
+          className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light leading-[1.2] mb-8 max-w-3xl mx-auto"
         >
-          Un portal para 
-          <br />
-          <span className="text-gradient-gold font-medium italic">entender tu proceso personal</span>
+          Astar escucha tu historia e interpreta tus decisiones y tus{" "}
+          <span className="text-gradient-gold font-medium italic">perspectivas astrológicas</span>{" "}
+          con esmero, orientación experta y claridad.
         </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 1 }}
-          className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-12 leading-relaxed"
-        >
-          Un lugar donde tu historia, tus decisiones y tus procesos se integran para que puedas entender lo que realmente está pasando en tu vida
-        </motion.p>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 1.3 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4"
+          transition={{ duration: 0.8, delay: 0.95 }}
+          className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6"
         >
-          <a
-            href="#subscription"
+          <Link
+            to="/register"
             className="px-8 py-4 rounded-full shimmer-gold text-primary-foreground font-medium tracking-wide hover:opacity-90 transition-opacity glow-gold"
           >
-            Explorar la Suscripción
-          </a>
+            Crea tu portal gratuito
+          </Link>
           <a
             href="#portal"
             className="px-8 py-4 rounded-full border border-border text-foreground hover:border-primary/50 hover:bg-primary/5 transition-all tracking-wide"
           >
-            Ver qué incluye
+            Descubre qué hay dentro
           </a>
         </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 1.15 }}
+          className="text-sm text-muted-foreground tracking-wide"
+        >
+          Empieza gratis. Desbloquea más profundidad según lo necesites.
+        </motion.p>
 
         {/* Scroll indicator */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 2, duration: 1 }}
-          className="mt-24 flex flex-col items-center gap-2"
+          transition={{ delay: 1.6, duration: 1 }}
+          className="mt-20 flex flex-col items-center gap-2"
         >
           <p className="text-xs text-muted-foreground tracking-widest uppercase">Desplazar</p>
           <motion.div

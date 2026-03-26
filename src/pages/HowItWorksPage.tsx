@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import LandingSubscribeSectionLink from "@/components/landing/LandingSubscribeSectionLink";
 import { UserPlus, CreditCard, LayoutDashboard, MessageCircle, HelpCircle } from "lucide-react";
 
 const steps = [
@@ -44,9 +44,9 @@ const HowItWorksPage = () => {
         </div>
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }} className="text-center mt-16">
-          <Link to="/subscribe" className="inline-block px-10 py-4 rounded-xl shimmer-gold text-primary-foreground font-medium tracking-wide glow-gold">
-            Comenzar Ahora
-          </Link>
+          <LandingSubscribeSectionLink className="inline-block px-10 py-4 rounded-xl shimmer-gold text-primary-foreground font-medium tracking-wide glow-gold">
+            Comenzar ahora
+          </LandingSubscribeSectionLink>
         </motion.div>
       </div>
     </section>
