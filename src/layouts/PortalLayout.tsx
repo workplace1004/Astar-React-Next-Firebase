@@ -2,7 +2,7 @@ import { Outlet, Navigate, NavLink, Link, useNavigate, useLocation } from "react
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortalNotifications } from "@/contexts/PortalNotificationsContext";
 import { PortalNotificationsProvider } from "@/contexts/PortalNotificationsContext";
-import { LayoutDashboard, FileText, MessageCircle, HelpCircle, ShoppingCart, CreditCard, LogOut, Menu, Bell, User } from "lucide-react";
+import { LayoutDashboard, FileText, MessageCircle, HelpCircle, Package, ShoppingCart, CreditCard, LogOut, Menu, Bell, User } from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "next-themes";
 import ThemeToggle from "@/components/landing/ThemeToggle";
@@ -14,6 +14,7 @@ const navItems = [
   { to: "/portal/reports", icon: FileText, label: "Reportes" },
   { to: "/portal/messages", icon: MessageCircle, label: "Mensajes" },
   { to: "/portal/questions", icon: HelpCircle, label: "Preguntas" },
+  { to: "/portal/extra-services", icon: Package, label: "Servicios extras" },
   { to: "/portal/purchase", icon: ShoppingCart, label: "Comprar Extras" },
 ];
 
@@ -25,6 +26,7 @@ const pageMeta: Record<string, { title: string; subtitle: string }> = {
   "/portal/reports/numerology": { title: "Numerología", subtitle: "Tu análisis numerológico personal" },
   "/portal/messages": { title: "Mensajes", subtitle: "Mensajes de tu astróloga" },
   "/portal/questions": { title: "Mis Preguntas", subtitle: "Consultas realizadas y respuestas" },
+  "/portal/extra-services": { title: "Servicios extras", subtitle: "Consultas y sesiones con precios orientativos (USD y ARS)" },
   "/portal/purchase": { title: "Comprar Extras", subtitle: "Adquiere servicios adicionales" },
   "/portal/subscription": { title: "Mi Suscripción", subtitle: "Gestiona tu plan y facturación" },
   "/portal/account": { title: "Mi Cuenta", subtitle: "Configuración de tu perfil" },
@@ -237,7 +239,9 @@ const PortalLayout = () => {
     return <Navigate to="/login" replace />;
   }
 
-  if (!hasActiveSubscription && location.pathname !== "/portal/subscription") {
+  const allowedWithoutSubscription =
+    location.pathname === "/portal/subscription" || location.pathname === "/portal/extra-services";
+  if (!hasActiveSubscription && !allowedWithoutSubscription) {
     return <Navigate to="/portal/subscription" replace />;
   }
 

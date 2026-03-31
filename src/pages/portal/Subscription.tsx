@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import { CreditCard, Calendar, Receipt, Loader2, Check, Shield, Star, Crown } from "lucide-react";
+import { CreditCard, Calendar, Receipt, Loader2, Shield, Star, Crown } from "lucide-react";
+import { DoubleCheckIcon } from "@/components/icons/DoubleCheckIcon";
 import { useState, useEffect, useMemo } from "react";
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
 import { useSearchParams } from "react-router-dom";
@@ -367,7 +368,7 @@ const Subscription = () => {
               <ul className="space-y-2 flex-1">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2 text-xs">
-                    <Check className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+                    <DoubleCheckIcon className="w-3.5 h-3.5 text-primary mt-0.5" />
                     <span className="text-muted-foreground">{feature}</span>
                   </li>
                 ))}

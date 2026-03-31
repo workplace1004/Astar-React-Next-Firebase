@@ -723,3 +723,16 @@ export async function portalSubmitQuestion(question: string): Promise<{ id: stri
   if (!res.ok) throw new Error((data as { message?: string }).message ?? "No se pudo enviar la pregunta");
   return data as { id: string; question: string; status: string; createdAt: string };
 }
+
+export interface UsdArsRateResponse {
+  arsPerUsd: number;
+  source: "live" | "fallback";
+  asOf?: string;
+}
+
+/** Cotización 1 USD → ARS (backend usa ExchangeRate-API; sin auth). */
+export async function fetchUsdArsRate(): Promise<UsdArsRateResponse> {
+  const res = await fetch(`${API_BASE}/exchange/usd-ars`);
+  if (!res.ok) throw new Error("No se pudo obtener la cotización");
+  return res.json() as Promise<UsdArsRateResponse>;
+}

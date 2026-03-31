@@ -34,6 +34,7 @@ const Numerology = lazy(() => import("@/pages/portal/Numerology"));
 const Messages = lazy(() => import("@/pages/portal/Messages"));
 const Questions = lazy(() => import("@/pages/portal/Questions"));
 const Purchase = lazy(() => import("@/pages/portal/Purchase"));
+const ExtraServices = lazy(() => import("@/pages/portal/ExtraServices"));
 const PortalSubscription = lazy(() => import("@/pages/portal/Subscription"));
 const Account = lazy(() => import("@/pages/portal/Account"));
 const Notifications = lazy(() => import("@/pages/portal/Notifications"));
@@ -100,6 +101,7 @@ const App = () => {
                   <Route path="reports/numerology" element={<Numerology />} />
                   <Route path="messages" element={<Messages />} />
                   <Route path="questions" element={<Questions />} />
+                  <Route path="extra-services" element={<ExtraServices />} />
                   <Route path="purchase" element={<Purchase />} />
                   <Route path="subscription" element={<PortalSubscription />} />
                   <Route path="account" element={<Account />} />

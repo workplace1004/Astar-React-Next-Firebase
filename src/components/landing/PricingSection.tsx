@@ -1,5 +1,6 @@
-import { motion } from "framer-motion";
-import { Check, Shield, Star } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Shield, Star } from "lucide-react";
+import { DoubleCheckIcon } from "@/components/icons/DoubleCheckIcon";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { LANDING_SUBSCRIBE_SECTION_ID } from "@/lib/landingAnchors";
@@ -40,7 +41,7 @@ const PricingSection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.55 }}
-          className="flex items-center justify-center gap-1 mb-12"
+          className="flex items-center justify-center gap-2 mb-12 overflow-visible pt-1"
         >
           <button
             type="button"
@@ -53,17 +54,38 @@ const PricingSection = () => {
           >
             Pago mensual
           </button>
-          <button
-            type="button"
-            onClick={() => setBilling("annual")}
-            className={`px-5 py-2.5 rounded-full text-sm font-medium tracking-wide transition-all duration-300 ${
-              billing === "annual"
-                ? "bg-primary/20 border border-primary/50 text-primary"
-                : "border border-border/50 text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Pago anual
-          </button>
+          <span className="relative inline-flex shrink-0">
+            <button
+              type="button"
+              onClick={() => setBilling("annual")}
+              className={`px-5 py-2.5 rounded-full text-sm font-medium tracking-wide transition-all duration-300 ${
+                billing === "annual"
+                  ? "bg-primary/20 border border-primary/50 text-primary"
+                  : "border border-border/50 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Pago anual
+            </button>
+            <AnimatePresence>
+              {billing === "annual" && (
+                <motion.span
+                  initial={{ opacity: 0, scale: 0.5, y: 8, rotate: 0 }}
+                  animate={{ opacity: 1, scale: 1, y: 0, rotate: 360 }}
+                  exit={{ opacity: 0, scale: 0.85, y: -4, rotate: 0 }}
+                  transition={{
+                    rotate: { duration: 1.2, ease: [0.22, 1, 0.36, 1] },
+                    opacity: { duration: 0.25 },
+                    scale: { type: "spring", stiffness: 520, damping: 24 },
+                    y: { type: "spring", stiffness: 520, damping: 24 },
+                  }}
+                  className="pointer-events-none absolute -right-1 -top-2 z-10 inline-block origin-center rounded-full bg-amber-400 px-2 py-0.5 text-[13px] font-bold uppercase leading-none tracking-wide text-black shadow-sm font-sans"
+                  aria-hidden
+                >
+                  20% OFF
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </span>
         </motion.div>
 
         <div className="grid md:grid-cols-2 gap-6 md:gap-8">
@@ -78,7 +100,7 @@ const PricingSection = () => {
               <h3 className="font-serif text-2xl font-medium">Essentials</h3>
               <Shield className="w-5 h-5 text-muted-foreground" />
             </div>
-            <p className="text-3xl font-light text-gradient-gold mb-1">Gratis</p>
+            <p className="text-5xl font-light text-gradient-gold mb-1">Gratis</p>
             <p className="text-sm text-muted-foreground mb-8">Para dar los primeros pasos y explorar tu carta astral</p>
             <Link
               to="/register"
@@ -95,7 +117,7 @@ const PricingSection = () => {
                 "Lecturas y documentos simbólicos",
               ].map((feature) => (
                 <li key={feature} className="flex items-start gap-3 text-sm">
-                  <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                  <DoubleCheckIcon className="w-4 h-4 text-primary mt-0.5" />
                   <span className="text-muted-foreground">{feature}</span>
                 </li>
               ))}
@@ -109,6 +131,7 @@ const PricingSection = () => {
             transition={{ duration: 0.55, delay: 0.08 }}
             whileHover={{ y: -4 }}
             className="relative overflow-hidden rounded-2xl p-8 flex flex-col border-2 border-primary/70 glass-card premium-shadow-lg shadow-[0_0_0_2px_hsl(var(--primary)/0.5),0_0_28px_hsl(var(--primary)/0.2)]"
+            style={{border: "2px solid hsl(var(--primary)/0.7)"}}
           >
             <p className="absolute top-4 right-4 text-[10px] uppercase tracking-widest text-primary font-medium">
               El más popular
@@ -147,7 +170,7 @@ const PricingSection = () => {
                 "1 respuesta detallada y personalizada de Carlos por vídeo, audio o por escrito (no IA)",
               ].map((feature) => (
                 <li key={feature} className="flex items-start gap-3 text-sm">
-                  <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                  <DoubleCheckIcon className="w-4 h-4 text-primary mt-0.5" />
                   <span className="text-muted-foreground">{feature}</span>
                 </li>
               ))}

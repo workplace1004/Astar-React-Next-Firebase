@@ -268,12 +268,18 @@
     @apply bg-background text-foreground font-sans antialiased;
   }
 
+  /* Títulos en serif; los dígitos deben usar sans (p. ej. SerifWithSansNumerals o spans con font-sans). */
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-serif);
   }
 }
 
 @layer utilities {
+  /* Cifras y montos: siempre stack sans + tabular (no mezclar con Arsenica). */
+  .font-numeric-sans {
+    @apply font-sans tabular-nums;
+  }
+
   .font-serif-display {
     font-family: var(--font-serif);
   }

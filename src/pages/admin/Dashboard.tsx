@@ -721,7 +721,7 @@ const AdminDashboard = () => {
             </div>
           </div>
           <p className="text-xs text-muted-foreground mt-3">
-            Estimación interna: 1 preview = 2 llamadas al proveedor (`natal_wheel_chart` + `planets/tropical`).
+            Estimación interna: 1 preview = 2 llamadas al proveedor Astrology API (cartas SVG natal + posiciones).
           </p>
           {usageChartData.length > 0 && (
             <div className="mt-4">
