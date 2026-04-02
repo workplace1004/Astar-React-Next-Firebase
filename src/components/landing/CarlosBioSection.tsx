@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { User } from "lucide-react";
@@ -26,9 +27,12 @@ type CarlosBioSectionProps = {
   id?: string;
 };
 
+const PROFESSIONAL_PHOTO_SRC = "/me.jpg";
+
 const CarlosBioSection = ({ variant = "landing", className, id }: CarlosBioSectionProps) => {
   const isLanding = variant === "landing";
   const bioBody = isLanding ? BIO_BODY_LANDING : BIO_BODY_ABOUT;
+  const [photoFailed, setPhotoFailed] = useState(false);
 
   return (
     <section
@@ -111,15 +115,29 @@ const CarlosBioSection = ({ variant = "landing", className, id }: CarlosBioSecti
           >
             <div
               className={cn(
-                "relative w-full max-w-[320px] aspect-[3/4] rounded-2xl border-2 border-dashed border-primary/35 bg-background/40 flex flex-col items-center justify-center gap-3 text-center px-6 premium-shadow",
-                "text-muted-foreground"
+                "relative w-full max-w-[320px] aspect-[3/4] rounded-2xl overflow-hidden premium-shadow",
+                photoFailed &&
+                  "border-2 border-dashed border-primary/35 bg-background/40 flex flex-col items-center justify-center gap-3 text-center px-6 text-muted-foreground"
               )}
-              aria-label="Espacio para foto profesional de Carlos Bersano"
+              aria-label="Foto profesional de Carlos Bersano"
             >
-              <User className="w-14 h-14 text-primary/50" strokeWidth={1.25} />
-              <p className="text-sm leading-relaxed">
-                Añade aquí una foto profesional tuya
-              </p>
+              {!photoFailed ? (
+                <img
+                  src={PROFESSIONAL_PHOTO_SRC}
+                  alt="Carlos Bersano, astrólogo y numerólogo"
+                  className="h-full w-full origin-top scale-[140%] object-cover object-top"
+                  loading="lazy"
+                  decoding="async"
+                  onError={() => setPhotoFailed(true)}
+                />
+              ) : (
+                <>
+                  <User className="w-14 h-14 text-primary/50" strokeWidth={1.25} />
+                  <p className="text-sm leading-relaxed">
+                    Añade aquí una foto profesional tuya
+                  </p>
+                </>
+              )}
             </div>
           </motion.div>
         </div>
