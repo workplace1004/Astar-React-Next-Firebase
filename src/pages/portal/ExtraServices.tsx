@@ -1,9 +1,13 @@
-import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { MessageCircle, Sparkles } from "lucide-react";
+import { usePortalExtrasCart } from "@/contexts/PortalExtrasCartContext";
+import { Heart, ShoppingCart, Sparkles } from "lucide-react";
 import { SansNumeralsInherit, SerifWithSansNumerals } from "@/components/SerifWithSansNumerals";
-import { fetchUsdArsRate } from "@/lib/api";
+import { fetchUsdArsRate, paymentConfirmMercadoPagoPayment, paymentConfirmStripeSession } from "@/lib/api";
+import { toast } from "@/components/ui/sonner";
+import { cn } from "@/lib/utils";
+import { EXTRA_SERVICES as SERVICES, type ServiceItem } from "@/lib/extraServicesCatalog";
 
 /** Si el backend no tiene clave o la API falla, hasta que cargue otra cosa. */
 const FALLBACK_ARS_PER_USD = 1450;
@@ -30,107 +34,6 @@ function UsdPriceHeading({ amountUsd }: { amountUsd: number }) {
   );
 }
 
-type ServiceItem = {
-  id: string;
-  title: string;
-  meta?: string;
-  paragraphs: string[];
-  priceGuestUsd: number;
-  priceSubUsd: number;
-};
-
-const SERVICES: ServiceItem[] = [
-  {
-    id: "momento-actual",
-    title: "Lectura de tu momento actual + preguntas",
-    meta: "Aproximadamente 60 minutos en vivo. Chat escrito con Carlos desde tu portal.",
-    paragraphs: [
-      "Comprendé qué está pasando en tu vida ahora y por qué. Además, vas a poder hacer preguntas en vivo por chat conmigo, para profundizar y llevar claridad a lo que realmente te está moviendo.",
-    ],
-    priceGuestUsd: 210,
-    priceSubUsd: 105,
-  },
-  {
-    id: "energia-interna",
-    title: "Tu energía interna vs la que estás mostrando",
-    paragraphs: [
-      "Descubrí la diferencia entre quién sos por dentro y lo que estás expresando hacia afuera. Ideal para entender bloqueos, incoherencias y empezar a alinearte.",
-    ],
-    priceGuestUsd: 110,
-    priceSubUsd: 55,
-  },
-  {
-    id: "tomar-decision",
-    title: "Tomar una decisión",
-    meta: "Se envía un informe escrito y se puede volver a preguntar alguna duda vía chat.",
-    paragraphs: [
-      "Si estás frente a una decisión importante, te ayudo a ver qué la está condicionando y desde dónde estás eligiendo. Más claridad para decidir con conciencia.",
-    ],
-    priceGuestUsd: 110,
-    priceSubUsd: 55,
-  },
-  {
-    id: "movimientos-6m",
-    title: "Tus próximos movimientos — 6 meses",
-    meta: "Se envía un informe escrito y se puede volver a preguntar alguna duda vía chat.",
-    paragraphs: [
-      "Interpretación de las energías que se están activando en tu vida en el corto plazo, para que entiendas hacia dónde te estás moviendo y cómo acompañarlo.",
-    ],
-    priceGuestUsd: 180,
-    priceSubUsd: 90,
-  },
-  {
-    id: "movimientos-12m",
-    title: "Tus próximos movimientos — 12 meses",
-    meta: "Se envía un informe escrito y se puede volver a preguntar alguna duda vía chat.",
-    paragraphs: [
-      "Una mirada más amplia de tu proceso. Entender el ciclo activo y cómo puede influir en tus decisiones.",
-    ],
-    priceGuestUsd: 230,
-    priceSubUsd: 115,
-  },
-  {
-    id: "audio-personalizado",
-    title: "Audio personalizado de lo que necesites",
-    meta: "Audio explicativo para escuchar o descargar desde tu portal.",
-    paragraphs: [
-      "Una respuesta en audio, clara y profunda, sobre cualquier duda que tengas: puede ser sobre tu carta astral, revolución solar, numerología o una pregunta puntual de tu vida. Recibís una interpretación personalizada para entender qué está pasando y cómo abordarlo.",
-    ],
-    priceGuestUsd: 50,
-    priceSubUsd: 25,
-  },
-  {
-    id: "carta-vivo",
-    title: "Lectura en vivo de tu carta astral",
-    meta: "Lectura por videollamada.",
-    paragraphs: [
-      "En esta sesión conocerás en profundidad los aspectos más importantes de tu carta astral y cómo se reflejan en tu vida. Te conocerás más a nivel personal, entendiendo tus rasgos, tu forma de pensar y de actuar. Comprenderás cómo se manifiestan tus vínculos, tus decisiones y tus experiencias a lo largo del tiempo. Podrás ver qué áreas de tu vida tienen mayor potencial y cuáles requieren más atención. Identificarás patrones que se repiten y el sentido detrás de ellos. Y mucho más… Una interpretación clara y personalizada para que puedas entenderte mejor y ver tu vida con otra perspectiva.",
-    ],
-    priceGuestUsd: 540,
-    priceSubUsd: 270,
-  },
-  {
-    id: "solar-vivo",
-    title: "Lectura en vivo de tu revolución solar",
-    meta: "Lectura por videollamada.",
-    paragraphs: [
-      "En esta sesión conocerás en profundidad el ciclo que estás atravesando en este año y cómo se refleja en tu vida. Comprenderás qué energías se activan durante este período y cómo pueden influir en tus decisiones. Verás qué áreas de tu vida toman protagonismo y cuáles requieren mayor atención. Podrás anticipar momentos clave del año para aprovecharlos con mayor conciencia. Identificarás el sentido de los cambios y procesos que estás viviendo. Y mucho más… Una interpretación clara y personalizada para que puedas transitar tu año con mayor claridad, enfoque y comprensión.",
-    ],
-    priceGuestUsd: 540,
-    priceSubUsd: 270,
-  },
-  {
-    id: "tres-preguntas",
-    title: "3 preguntas (respondo integrando todas mis herramientas)",
-    meta: "Se envía un informe escrito y se puede volver a preguntar alguna duda vía chat.",
-    paragraphs: [
-      "Respuestas profundas a tus preguntas, integrando astrología, tarot, numerología y lectura de patrones inconscientes.",
-    ],
-    priceGuestUsd: 70,
-    priceSubUsd: 35,
-  },
-];
-
 function PriceBlock({
   guestUsd,
   subUsd,
@@ -144,37 +47,41 @@ function PriceBlock({
 }) {
   return (
     <div
-      className={`mt-6 rounded-xl border border-border/50 bg-black/45 p-5 shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.06)] transition-colors ${
-        isSubscriber
-          ? "border-[3px] border-primary bg-primary/[0.08] ring-2 ring-inset ring-primary/30 shadow-[inset_0_0_24px_-12px_hsl(var(--primary)/0.2)]"
-          : "border-border/50 bg-card/20"
-      }`}
+      className={`mt-6 rounded-xl border border-border/50 bg-black/45 p-5 shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.06)] transition-colors ${isSubscriber
+        ? "border-[3px] border-primary bg-primary/[0.08] ring-2 ring-inset ring-primary/30 shadow-[inset_0_0_24px_-12px_hsl(var(--primary)/0.2)]"
+        : "border-border/50 bg-card/20"
+        }`}
     >
       {isSubscriber ? (
         <>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary mb-3">Suscripto</p>
-          <UsdPriceHeading amountUsd={subUsd} />
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <UsdPriceHeading amountUsd={subUsd} />
+            <span className="text-sm text-muted-foreground font-numeric-sans tabular-nums leading-snug shrink-0">
+              ≈ ARS {formatApproxArs(subUsd, arsPerUsd)}{" "}
+              <span className="text-xs opacity-80">(aprox.)</span>
+            </span>
+          </div>
           <p className="mt-2 text-[11px] leading-snug">
             <span className="text-muted-foreground">Precio estándar: </span>
             <span className="font-numeric-sans text-primary line-through decoration-primary/55">
               USD {guestUsd.toLocaleString("es-AR")}.00
             </span>
           </p>
-          <p className="text-sm text-muted-foreground mt-2 font-numeric-sans tabular-nums leading-snug">
-            ≈ ARS {formatApproxArs(subUsd, arsPerUsd)} <span className="text-xs opacity-80">(aprox.)</span>
-          </p>
         </>
       ) : (
         <>
-          <UsdPriceHeading amountUsd={guestUsd} />
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <UsdPriceHeading amountUsd={guestUsd} />
+            <span className="text-sm text-muted-foreground font-numeric-sans tabular-nums leading-snug shrink-0">
+              ≈ ARS {formatApproxArs(guestUsd, arsPerUsd)}{" "}
+              <span className="text-xs opacity-80">(aprox.)</span>
+            </span>
+          </div>
           <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
             <span>Con suscripción: </span>
             <span className="font-semibold text-primary font-numeric-sans">
               USD {subUsd.toLocaleString("es-AR")}.00
             </span>
-          </p>
-          <p className="text-sm text-muted-foreground mt-2 font-numeric-sans tabular-nums leading-snug">
-            ≈ ARS {formatApproxArs(guestUsd, arsPerUsd)} <span className="text-xs opacity-80">(aprox.)</span>
           </p>
         </>
       )}
@@ -182,10 +89,273 @@ function PriceBlock({
   );
 }
 
+function useMediaMdUp() {
+  const [mdUp, setMdUp] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const apply = () => setMdUp(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+  return mdUp;
+}
+
+function ExtraServiceCard({
+  service: s,
+  cardImage,
+  hasActiveSubscription,
+  arsPerUsd,
+}: {
+  service: ServiceItem;
+  cardImage: string;
+  hasActiveSubscription: boolean;
+  arsPerUsd: number;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const { toggleInCart, isInCart, isFavorite, toggleFavorite } = usePortalExtrasCart();
+  const favorited = isFavorite(s.id);
+  const inCart = isInCart(s.id);
+  const [imgH, setImgH] = useState<number | null>(null);
+  const [textOverflows, setTextOverflows] = useState(false);
+  const imgShellRef = useRef<HTMLDivElement>(null);
+  const clipRef = useRef<HTMLDivElement>(null);
+  const isMdUp = useMediaMdUp();
+
+  const measureOverflow = useCallback(() => {
+    const clip = clipRef.current;
+    if (!clip) return;
+    setTextOverflows(clip.scrollHeight > clip.clientHeight + 2);
+  }, []);
+
+  useLayoutEffect(() => {
+    const el = imgShellRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      setImgH(Math.round(el.getBoundingClientRect().height));
+    });
+    ro.observe(el);
+    setImgH(Math.round(el.getBoundingClientRect().height));
+    return () => ro.disconnect();
+  }, []);
+
+  useLayoutEffect(() => {
+    measureOverflow();
+    const raf = requestAnimationFrame(measureOverflow);
+    const t = window.setTimeout(measureOverflow, 120);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(t);
+    };
+  }, [expanded, imgH, isMdUp, measureOverflow, s.id, s.paragraphs]);
+
+  useEffect(() => {
+    window.addEventListener("resize", measureOverflow);
+    return () => window.removeEventListener("resize", measureOverflow);
+  }, [measureOverflow]);
+
+  const capLeftToImage = isMdUp && !expanded && imgH != null && imgH > 0;
+
+  return (
+    <article className="rounded-2xl border border-border/60 bg-card/50 p-6 md:p-8 shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.04)] backdrop-blur-sm">
+      <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-8">
+        <div
+          className={cn(
+            "flex min-w-0 flex-1 flex-col",
+            isMdUp && "min-h-0",
+            capLeftToImage && "overflow-hidden",
+          )}
+          style={capLeftToImage ? { maxHeight: imgH } : undefined}
+        >
+          <SerifWithSansNumerals
+            as="h2"
+            className="shrink-0 text-xl md:text-2xl font-light text-foreground mb-4 leading-snug"
+            text={s.title}
+          />
+          {s.meta && (
+            <p className="shrink-0 text-sm text-primary/90 mb-4 border-l-2 border-primary/40 pl-3">
+              <SansNumeralsInherit text={s.meta} />
+            </p>
+          )}
+          <div
+            className={cn(
+              "flex flex-col gap-2",
+              isMdUp && !expanded && "min-h-0 flex-1 overflow-hidden",
+            )}
+          >
+            <div
+              ref={clipRef}
+              className={cn(
+                "space-y-3 text-sm md:text-base text-muted-foreground leading-relaxed",
+                !expanded && !isMdUp && "line-clamp-4",
+                isMdUp && !expanded && "min-h-0 flex-1 overflow-hidden",
+                isMdUp && expanded && "overflow-visible",
+              )}
+            >
+              {s.paragraphs.map((p, i) => (
+                <p key={i}>{p}</p>
+              ))}
+            </div>
+            {(textOverflows || expanded) && (
+              <button
+                type="button"
+                className="shrink-0 text-left text-sm font-medium text-primary hover:underline"
+                onClick={() => setExpanded((v) => !v)}
+              >
+                {expanded ? "Ver menos" : "... Ver más"}
+              </button>
+            )}
+          </div>
+          <div className="shrink-0">
+            <PriceBlock
+              guestUsd={s.priceGuestUsd}
+              subUsd={s.priceSubUsd}
+              isSubscriber={hasActiveSubscription}
+              arsPerUsd={arsPerUsd}
+            />
+          </div>
+        </div>
+        <div
+          ref={imgShellRef}
+          className="mx-auto w-full max-w-[500px] shrink-0 md:mx-0 md:w-[260px] lg:w-[500px] h-[400px]"
+        >
+          <div className="relative w-full overflow-hidden rounded-xl border border-border/50 bg-muted/10 shadow-sm">
+            <img
+              src={cardImage}
+              alt=""
+              className="h-[400px] w-[500px] object-cover object-center"
+              loading="lazy"
+              decoding="async"
+              onLoad={measureOverflow}
+            />
+            <div className="absolute right-2 top-2 z-10 flex items-center gap-2 rounded-full border border-white/15 bg-black/50 px-2 py-1.5 shadow-sm backdrop-blur-sm">
+              <button
+                type="button"
+                aria-pressed={favorited}
+                aria-label={favorited ? "Quitar de favoritos" : "Agregar a favoritos"}
+                className={cn(
+                  "relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-[background-color,box-shadow,transform] duration-200",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black/40",
+                  favorited
+                    ? "bg-primary/35 shadow-[0_0_0_2px_hsl(var(--primary)/0.55),0_0_20px_-4px_hsl(var(--primary)/0.5)]"
+                    : "bg-white/5 hover:bg-white/10 active:scale-95",
+                )}
+                onClick={() => {
+                  const was = favorited;
+                  toggleFavorite(s.id);
+                  if (!was) {
+                    toast.success("Agregado a favoritos", {
+                      description: s.title,
+                      position: "top-right",
+                      duration: 3200,
+                    });
+                  } else {
+                    toast("Quitado de favoritos", {
+                      description: s.title,
+                      position: "top-right",
+                      duration: 2800,
+                    });
+                  }
+                }}
+              >
+                <Heart
+                  className={cn(
+                    "relative z-[1] h-6 w-6 text-primary transition-[fill,transform] duration-200",
+                    favorited && "fill-primary scale-105",
+                  )}
+                  strokeWidth={2}
+                />
+              </button>
+              <button
+                type="button"
+                aria-pressed={inCart}
+                aria-label={inCart ? `Quitar del carrito: ${s.title}` : `Agregar al carrito: ${s.title}`}
+                className={cn(
+                  "relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-[background-color,box-shadow,transform] duration-200",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black/40",
+                  inCart
+                    ? "bg-primary/35 shadow-[0_0_0_2px_hsl(var(--primary)/0.55),0_0_20px_-4px_hsl(var(--primary)/0.5)]"
+                    : "bg-white/5 hover:bg-white/10 active:scale-95",
+                )}
+                onClick={() => {
+                  const wasInCart = inCart;
+                  toggleInCart(s.id);
+                  if (!wasInCart) {
+                    toast.success("Agregado al carrito", {
+                      description: s.title,
+                      position: "top-right",
+                      duration: 3200,
+                    });
+                  } else {
+                    toast("Quitado del carrito", {
+                      description: s.title,
+                      position: "top-right",
+                      duration: 2800,
+                    });
+                  }
+                }}
+              >
+                <ShoppingCart
+                  className={cn(
+                    "relative z-[1] h-6 w-6 text-primary transition-transform duration-200",
+                    inCart && "scale-105",
+                  )}
+                  strokeWidth={2}
+                />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 const ExtraServices = () => {
   const { hasActiveSubscription } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [arsPerUsd, setArsPerUsd] = useState(FALLBACK_ARS_PER_USD);
   const [rateSource, setRateSource] = useState<"live" | "fallback" | null>(null);
+  const [payBanner, setPayBanner] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  const paymentStatus = searchParams.get("status");
+  const paymentProvider = searchParams.get("provider");
+  const sessionId = searchParams.get("session_id");
+  const mercadoPagoPaymentId = useMemo(
+    () => searchParams.get("payment_id") ?? searchParams.get("collection_id"),
+    [searchParams],
+  );
+
+  useEffect(() => {
+    const confirm = async () => {
+      if (paymentStatus !== "success") return;
+      try {
+        if (paymentProvider === "stripe" && sessionId) {
+          await paymentConfirmStripeSession(sessionId);
+          setPayBanner({ type: "ok", text: "Pago confirmado. Tu compra extra ya está registrada." });
+        } else if (paymentProvider === "mercadopago" && mercadoPagoPaymentId) {
+          await paymentConfirmMercadoPagoPayment(mercadoPagoPaymentId);
+          setPayBanner({ type: "ok", text: "Pago confirmado. Tu compra extra ya está registrada." });
+        } else {
+          return;
+        }
+      } catch (err) {
+        setPayBanner({
+          type: "err",
+          text: err instanceof Error ? err.message : "No se pudo confirmar el pago.",
+        });
+      } finally {
+        const clean = new URLSearchParams(searchParams);
+        clean.delete("provider");
+        clean.delete("status");
+        clean.delete("session_id");
+        clean.delete("payment_id");
+        clean.delete("collection_id");
+        setSearchParams(clean, { replace: true });
+      }
+    };
+    void confirm();
+  }, [mercadoPagoPaymentId, paymentProvider, paymentStatus, searchParams, sessionId, setSearchParams]);
 
   useEffect(() => {
     let cancelled = false;
@@ -206,102 +376,33 @@ const ExtraServices = () => {
   }, []);
 
   return (
-    <div className="max-w-3xl mx-auto space-y-10 pb-8">
+    <div className="max-w-5xl mx-auto space-y-10 pb-8">
       <div>
         <div className="flex items-center gap-2 text-primary mb-3">
           <Sparkles className="w-5 h-5" />
           <span className="text-xs font-medium tracking-[0.2em] uppercase">Catálogo</span>
         </div>
         <h1 className="font-serif text-3xl md:text-4xl text-foreground mb-4">Servicios extras</h1>
-        <p className="text-muted-foreground text-sm md:text-base leading-relaxed">
-          Los precios en dólares y en pesos argentinos son <strong className="text-foreground font-medium">orientativos</strong>{" "}
-          para que tengas una idea. El equivalente en ARS usa{" "}
-          {rateSource === "live" ? (
-            <span>
-              una cotización <strong className="text-foreground font-medium">actualizada</strong> (USD → ARS vía ExchangeRate-API;{" "}
-              <SansNumeralsInherit
-                text={`USD 1 ≈ ARS ${Math.round(arsPerUsd).toLocaleString("es-AR")}`}
-                className="font-numeric-sans"
-              />
-              ).
-            </span>
-          ) : (
-            <span>
-              una cotización de <strong className="text-foreground font-medium">referencia</strong> hasta que el servidor obtenga la tasa en vivo (
-              <SansNumeralsInherit
-                text={`USD 1 ≈ ARS ${Math.round(arsPerUsd).toLocaleString("es-AR")}`}
-                className="font-numeric-sans"
-              />
-              ).
-            </span>
-          )}{" "}
-          El importe final se confirma al contratar.
-        </p>
-        {hasActiveSubscription && (
-          <p className="mt-3 text-sm text-primary font-medium">
-            Tenés suscripción activa: aplican los valores de la columna «Suscripto».
+        {payBanner && (
+          <p
+            className={`text-sm mb-4 ${payBanner.type === "ok" ? "text-emerald-400" : "text-destructive"}`}
+            role="status"
+          >
+            {payBanner.text}
           </p>
         )}
       </div>
 
       <div className="space-y-8">
-        {SERVICES.map((s) => (
-          <article
+        {SERVICES.map((s, cardIndex) => (
+          <ExtraServiceCard
             key={s.id}
-            className="rounded-2xl border border-border/60 bg-card/50 p-6 md:p-8 shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.04)] backdrop-blur-sm"
-          >
-            <SerifWithSansNumerals
-              as="h2"
-              className="text-xl md:text-2xl font-light text-foreground mb-4 leading-snug"
-              text={s.title}
-            />
-            {s.meta && (
-              <p className="text-sm text-primary/90 mb-4 border-l-2 border-primary/40 pl-3">
-                <SansNumeralsInherit text={s.meta} />
-              </p>
-            )}
-            <div className="space-y-3 text-sm md:text-base text-muted-foreground leading-relaxed">
-              {s.paragraphs.map((p, i) => (
-                <p key={i}>{p}</p>
-              ))}
-            </div>
-            <PriceBlock
-              guestUsd={s.priceGuestUsd}
-              subUsd={s.priceSubUsd}
-              isSubscriber={hasActiveSubscription}
-              arsPerUsd={arsPerUsd}
-            />
-          </article>
+            service={s}
+            cardImage={`/extra/${cardIndex + 1}.png`}
+            hasActiveSubscription={hasActiveSubscription}
+            arsPerUsd={arsPerUsd}
+          />
         ))}
-      </div>
-
-      <div className="glass-card rounded-2xl border border-border/50 p-6 text-center">
-        <MessageCircle className="w-8 h-8 text-primary mx-auto mb-3" />
-        <p className="text-sm text-muted-foreground mb-4">
-          Para solicitar un servicio extra o aclarar valores, escribinos desde{" "}
-          <strong className="text-foreground">Preguntas</strong> o <strong className="text-foreground">Mensajes</strong>{" "}
-          en tu portal.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link
-            to="/portal/questions"
-            className="inline-flex items-center justify-center px-5 py-2.5 rounded-full shimmer-gold text-primary-foreground text-sm font-medium"
-          >
-            Ir a Preguntas
-          </Link>
-          <Link
-            to="/portal/messages"
-            className="inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-border text-sm text-foreground hover:border-primary/40 transition-colors"
-          >
-            Ir a Mensajes
-          </Link>
-          <Link
-            to="/portal/purchase"
-            className="inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-border text-sm text-foreground hover:border-primary/40 transition-colors"
-          >
-            Comprar extras puntuales (pago online)
-          </Link>
-        </div>
       </div>
     </div>
   );

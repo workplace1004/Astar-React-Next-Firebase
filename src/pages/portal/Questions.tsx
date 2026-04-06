@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { Send, HelpCircle, ShoppingCart, Loader2, MessageCircle, CheckCircle } from "lucide-react";
+import { Send, HelpCircle, Package, Loader2, MessageCircle, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { portalSubmitQuestion, portalGetMyQuestions, type PortalQuestionItem } from "@/lib/api";
 
@@ -68,9 +68,9 @@ const Questions = () => {
               <>
                 <p className="text-foreground font-medium">Ya usaste tu pregunta mensual</p>
                 <p className="text-sm text-muted-foreground">
-                  Puedes comprar una pregunta extra.{" "}
-                  <Link to="/portal/purchase" className="text-primary hover:text-primary/80 inline-flex items-center gap-1">
-                    <ShoppingCart className="w-3 h-3" /> Comprar extra
+                  Consultá servicios y extras en el catálogo.{" "}
+                  <Link to="/portal/extra-services" className="text-primary hover:text-primary/80 inline-flex items-center gap-1">
+                    <Package className="w-3 h-3" /> Servicios extras
                   </Link>
                 </p>
               </>

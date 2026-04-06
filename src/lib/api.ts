@@ -530,6 +530,27 @@ export interface PortalOrder {
   createdAt: string;
 }
 
+export interface PortalExtrasCartItem {
+  id: string;
+  title: string;
+}
+
+export interface PortalMyOrdersResponse {
+  orders: PortalOrder[];
+  extrasCartItems: PortalExtrasCartItem[];
+}
+
+function normalizePortalMyOrdersResponse(data: unknown): PortalMyOrdersResponse {
+  if (Array.isArray(data)) {
+    return { orders: data as PortalOrder[], extrasCartItems: [] };
+  }
+  const d = data as Partial<PortalMyOrdersResponse>;
+  return {
+    orders: Array.isArray(d.orders) ? d.orders : [],
+    extrasCartItems: Array.isArray(d.extrasCartItems) ? d.extrasCartItems : [],
+  };
+}
+
 export interface PortalReport {
   id: string;
   type: string;
@@ -538,11 +559,11 @@ export interface PortalReport {
   createdAt: string;
 }
 
-export async function portalGetMyOrders(): Promise<PortalOrder[]> {
+export async function portalGetMyOrders(): Promise<PortalMyOrdersResponse> {
   const res = await fetch(`${API_BASE}/portal/orders`, { headers: authHeaders() });
-  if (!res.ok) return [];
-  const data = await res.json().catch(() => []);
-  return Array.isArray(data) ? data : [];
+  if (!res.ok) return { orders: [], extrasCartItems: [] };
+  const data = await res.json().catch(() => ({}));
+  return normalizePortalMyOrdersResponse(data);
 }
 
 export interface PortalMessage {
@@ -564,7 +585,7 @@ export interface PortalNotification {
 }
 
 export interface CheckoutResponse {
-  provider: "stripe" | "mercadopago";
+  provider: "stripe" | "mercadopago" | "paypal";
   checkoutUrl: string;
   reference: string;
   mode?: "custom";
@@ -604,6 +625,19 @@ export async function paymentCreateExtraCheckout(input: {
   return data as CheckoutResponse;
 }
 
+export async function paymentCreateExtrasCartCheckout(input: {
+  provider: "mercadopago" | "paypal";
+}): Promise<CheckoutResponse> {
+  const res = await fetch(`${API_BASE}/payments/extras-cart/checkout`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify(input),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data as { message?: string }).message ?? "No se pudo iniciar el checkout");
+  return data as CheckoutResponse;
+}
+
 export async function paymentConfirmStripeSession(sessionId: string): Promise<{ ok: boolean }> {
   const res = await fetch(`${API_BASE}/payments/confirm/stripe`, {
     method: "POST",
@@ -634,6 +668,17 @@ export async function paymentConfirmMercadoPagoPayment(paymentId: string): Promi
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error((data as { message?: string }).message ?? "No se pudo confirmar el pago de Mercado Pago");
+  return data as { ok: boolean };
+}
+
+export async function paymentConfirmPayPalOrder(orderId: string): Promise<{ ok: boolean }> {
+  const res = await fetch(`${API_BASE}/payments/confirm/paypal`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ orderId }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data as { message?: string }).message ?? "No se pudo confirmar el pago de PayPal");
   return data as { ok: boolean };
 }
 
@@ -696,6 +741,42 @@ export async function portalMarkAllNotificationsRead(): Promise<void> {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error("No se pudieron marcar todas como leídas");
+}
+
+export interface PortalExtrasSelections {
+  favoriteIds: string[];
+  cartServiceIds: string[];
+}
+
+export async function portalGetExtrasSelections(): Promise<PortalExtrasSelections> {
+  const res = await fetch(`${API_BASE}/portal/extras-selections`, { headers: authHeaders() });
+  if (!res.ok) throw new Error("No se pudieron cargar tus selecciones");
+  const data = (await res.json().catch(() => ({}))) as Partial<PortalExtrasSelections>;
+  return {
+    favoriteIds: Array.isArray(data.favoriteIds) ? data.favoriteIds : [],
+    cartServiceIds: Array.isArray(data.cartServiceIds) ? data.cartServiceIds : [],
+  };
+}
+
+export async function portalPutExtrasSelections(payload: PortalExtrasSelections): Promise<PortalExtrasSelections> {
+  const res = await fetch(`${API_BASE}/portal/extras-selections`, {
+    method: "PUT",
+    headers: authHeaders(),
+    body: JSON.stringify({
+      favoriteIds: payload.favoriteIds,
+      cartServiceIds: payload.cartServiceIds,
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data as { message?: string }).message ?? "No se pudo guardar");
+  return {
+    favoriteIds: Array.isArray((data as PortalExtrasSelections).favoriteIds)
+      ? (data as PortalExtrasSelections).favoriteIds
+      : payload.favoriteIds,
+    cartServiceIds: Array.isArray((data as PortalExtrasSelections).cartServiceIds)
+      ? (data as PortalExtrasSelections).cartServiceIds
+      : payload.cartServiceIds,
+  };
 }
 
 export interface PortalQuestionItem {

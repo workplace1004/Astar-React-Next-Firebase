@@ -2,7 +2,8 @@ import { Outlet, Navigate, NavLink, Link, useNavigate, useLocation } from "react
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortalNotifications } from "@/contexts/PortalNotificationsContext";
 import { PortalNotificationsProvider } from "@/contexts/PortalNotificationsContext";
-import { LayoutDashboard, FileText, MessageCircle, HelpCircle, Package, ShoppingCart, CreditCard, LogOut, Menu, Bell, User } from "lucide-react";
+import { PortalExtrasCartProvider, usePortalExtrasCart } from "@/contexts/PortalExtrasCartContext";
+import { LayoutDashboard, FileText, MessageCircle, HelpCircle, Package, ShoppingBag, ShoppingCart, CreditCard, LogOut, Menu, Bell, User } from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "next-themes";
 import ThemeToggle from "@/components/landing/ThemeToggle";
@@ -15,7 +16,6 @@ const navItems = [
   { to: "/portal/messages", icon: MessageCircle, label: "Mensajes" },
   { to: "/portal/questions", icon: HelpCircle, label: "Preguntas" },
   { to: "/portal/extra-services", icon: Package, label: "Servicios extras" },
-  { to: "/portal/purchase", icon: ShoppingCart, label: "Comprar Extras" },
 ];
 
 const pageMeta: Record<string, { title: string; subtitle: string }> = {
@@ -27,10 +27,10 @@ const pageMeta: Record<string, { title: string; subtitle: string }> = {
   "/portal/messages": { title: "Mensajes", subtitle: "Mensajes de tu astróloga" },
   "/portal/questions": { title: "Mis Preguntas", subtitle: "Consultas realizadas y respuestas" },
   "/portal/extra-services": { title: "Servicios extras", subtitle: "Consultas y sesiones con precios orientativos (USD y ARS)" },
-  "/portal/purchase": { title: "Comprar Extras", subtitle: "Adquiere servicios adicionales" },
   "/portal/subscription": { title: "Mi Suscripción", subtitle: "Gestiona tu plan y facturación" },
   "/portal/account": { title: "Mi Cuenta", subtitle: "Configuración de tu perfil" },
   "/portal/notifications": { title: "Notificaciones", subtitle: "Todas tus notificaciones" },
+  "/portal/orders": { title: "Mis pedidos", subtitle: "Historial de compras y pagos" },
 };
 
 function formatNotificationTime(iso: string): string {
@@ -53,7 +53,9 @@ const PortalLayoutContent = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { notifications } = usePortalNotifications();
+  const { itemCount: extrasCartCount } = usePortalExtrasCart();
 
   const handleLogout = async () => {
     await logout();
@@ -110,7 +112,7 @@ const PortalLayoutContent = () => {
   );
 
   const UserPopover = () => (
-    <Popover>
+    <Popover open={userMenuOpen} onOpenChange={setUserMenuOpen}>
       <PopoverTrigger asChild>
         <button className="flex items-center gap-3 pl-4 border-l border-border/30 hover:opacity-80 transition-opacity cursor-pointer">
           <div className="text-right">
@@ -132,17 +134,49 @@ const PortalLayoutContent = () => {
           <p className="text-xs text-muted-foreground mt-0.5">{user?.email}</p>
         </div>
         <div className="p-2">
-          <button onClick={() => navigate("/portal/account")} className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
+          <button
+            type="button"
+            onClick={() => {
+              navigate("/portal/account");
+              setUserMenuOpen(false);
+            }}
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+          >
             <User className="w-4 h-4" />
             Mi Cuenta
           </button>
-          <button onClick={() => navigate("/portal/subscription")} className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
+          <button
+            type="button"
+            onClick={() => {
+              navigate("/portal/subscription");
+              setUserMenuOpen(false);
+            }}
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+          >
             <CreditCard className="w-4 h-4" />
             Suscripción
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              navigate("/portal/orders");
+              setUserMenuOpen(false);
+            }}
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+          >
+            <ShoppingBag className="w-4 h-4" />
+            Mis pedidos
+          </button>
         </div>
         <div className="p-2 border-t border-border/30">
-          <button onClick={handleLogout} className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors">
+          <button
+            type="button"
+            onClick={() => {
+              void handleLogout();
+              setUserMenuOpen(false);
+            }}
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors"
+          >
             <LogOut className="w-4 h-4" />
             Cerrar sesión
           </button>
@@ -202,6 +236,22 @@ const PortalLayoutContent = () => {
           </Link>
           <div className="flex items-center gap-2">
             <NotificationPopover />
+            <Link
+              to="/portal/orders"
+              className="relative p-2.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+              aria-label={
+                extrasCartCount > 0
+                  ? `Mis pedidos, ${extrasCartCount} en el carrito`
+                  : "Mis pedidos"
+              }
+            >
+              <ShoppingCart className="w-5 h-5" />
+              {extrasCartCount > 0 && (
+                <span className="absolute top-0 right-0 min-w-[20px] min-h-[20px] px-1 flex items-center justify-center bg-primary text-[10px] text-primary-foreground font-medium rounded-full">
+                  {extrasCartCount > 99 ? "99+" : extrasCartCount}
+                </span>
+              )}
+            </Link>
             <ThemeToggle />
           </div>
         </header>
@@ -214,6 +264,22 @@ const PortalLayoutContent = () => {
           </div>
           <div className="flex items-center gap-4">
             <NotificationPopover />
+            <Link
+              to="/portal/orders"
+              className="relative p-2.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+              aria-label={
+                extrasCartCount > 0
+                  ? `Mis pedidos, ${extrasCartCount} en el carrito`
+                  : "Mis pedidos"
+              }
+            >
+              <ShoppingCart className="w-5 h-5" />
+              {extrasCartCount > 0 && (
+                <span className="absolute top-0 right-0 min-w-[20px] min-h-[20px] px-1 flex items-center justify-center bg-primary text-[10px] text-primary-foreground font-medium rounded-full">
+                  {extrasCartCount > 99 ? "99+" : extrasCartCount}
+                </span>
+              )}
+            </Link>
             <ThemeToggle />
             <UserPopover />
           </div>
@@ -240,14 +306,18 @@ const PortalLayout = () => {
   }
 
   const allowedWithoutSubscription =
-    location.pathname === "/portal/subscription" || location.pathname === "/portal/extra-services";
+    location.pathname === "/portal/subscription" ||
+    location.pathname === "/portal/extra-services" ||
+    location.pathname === "/portal/orders";
   if (!hasActiveSubscription && !allowedWithoutSubscription) {
     return <Navigate to="/portal/subscription" replace />;
   }
 
   return (
     <PortalNotificationsProvider>
-      <PortalLayoutContent />
+      <PortalExtrasCartProvider>
+        <PortalLayoutContent />
+      </PortalExtrasCartProvider>
     </PortalNotificationsProvider>
   );
 };

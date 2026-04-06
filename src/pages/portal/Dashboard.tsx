@@ -51,7 +51,7 @@ const PortalDashboard = () => {
         setReports(r);
         setMessages(m);
         setProfile(p ?? null);
-        setOrders(Array.isArray(o) ? o : []);
+        setOrders(o.orders);
       })
       .finally(() => setLoading(false));
   }, []);

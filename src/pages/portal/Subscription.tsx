@@ -133,7 +133,7 @@ const Subscription = () => {
   useEffect(() => {
     Promise.all([portalGetProfile(), portalGetMyOrders()]).then(([p, o]) => {
       setProfile(p ?? null);
-      setOrders(Array.isArray(o) ? o : []);
+      setOrders(o.orders);
       setLoading(false);
     });
   }, []);
@@ -183,7 +183,7 @@ const Subscription = () => {
         await refreshUser();
         const [p, o] = await Promise.all([portalGetProfile(), portalGetMyOrders()]);
         setProfile(p ?? null);
-        setOrders(Array.isArray(o) ? o : []);
+        setOrders(o.orders);
         setActionMessage("Pago confirmado. Tu suscripción está activa.");
         setActionError(null);
       } catch (err) {
@@ -444,7 +444,7 @@ const Subscription = () => {
                     await refreshUser();
                     const [p, o] = await Promise.all([portalGetProfile(), portalGetMyOrders()]);
                     setProfile(p ?? null);
-                    setOrders(Array.isArray(o) ? o : []);
+                    setOrders(o.orders);
                     setActionError(null);
                     setActionMessage("Pago confirmado. Tu suscripción está activa.");
                     setCheckoutModalOpen(false);
