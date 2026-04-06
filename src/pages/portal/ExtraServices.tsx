@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePortalExtrasCart } from "@/contexts/PortalExtrasCartContext";
 import { Heart, ShoppingCart, Sparkles } from "lucide-react";
 import { SansNumeralsInherit, SerifWithSansNumerals } from "@/components/SerifWithSansNumerals";
-import { fetchUsdArsRate, paymentConfirmMercadoPagoPayment, paymentConfirmStripeSession } from "@/lib/api";
+import { fetchUsdArsRate, paymentConfirmMercadoPagoPayment } from "@/lib/api";
 import { toast } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 import { EXTRA_SERVICES as SERVICES, type ServiceItem } from "@/lib/extraServicesCatalog";
@@ -320,7 +320,6 @@ const ExtraServices = () => {
 
   const paymentStatus = searchParams.get("status");
   const paymentProvider = searchParams.get("provider");
-  const sessionId = searchParams.get("session_id");
   const mercadoPagoPaymentId = useMemo(
     () => searchParams.get("payment_id") ?? searchParams.get("collection_id"),
     [searchParams],
@@ -330,10 +329,7 @@ const ExtraServices = () => {
     const confirm = async () => {
       if (paymentStatus !== "success") return;
       try {
-        if (paymentProvider === "stripe" && sessionId) {
-          await paymentConfirmStripeSession(sessionId);
-          setPayBanner({ type: "ok", text: "Pago confirmado. Tu compra extra ya está registrada." });
-        } else if (paymentProvider === "mercadopago" && mercadoPagoPaymentId) {
+        if (paymentProvider === "mercadopago" && mercadoPagoPaymentId) {
           await paymentConfirmMercadoPagoPayment(mercadoPagoPaymentId);
           setPayBanner({ type: "ok", text: "Pago confirmado. Tu compra extra ya está registrada." });
         } else {
@@ -348,14 +344,13 @@ const ExtraServices = () => {
         const clean = new URLSearchParams(searchParams);
         clean.delete("provider");
         clean.delete("status");
-        clean.delete("session_id");
         clean.delete("payment_id");
         clean.delete("collection_id");
         setSearchParams(clean, { replace: true });
       }
     };
     void confirm();
-  }, [mercadoPagoPaymentId, paymentProvider, paymentStatus, searchParams, sessionId, setSearchParams]);
+  }, [mercadoPagoPaymentId, paymentProvider, paymentStatus, searchParams, setSearchParams]);
 
   useEffect(() => {
     let cancelled = false;

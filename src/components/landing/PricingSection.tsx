@@ -185,7 +185,7 @@ const PricingSection = () => {
           transition={{ duration: 0.5, delay: 0.15 }}
           className="mt-8 text-center text-xs text-muted-foreground"
         >
-          Pagos seguros con Stripe y Mercado Pago.
+          Pagos seguros con PayPal y Mercado Pago.
         </motion.p>
       </div>
     </section>

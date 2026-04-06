@@ -49,7 +49,7 @@ const Footer = () => {
         </div>
         <div className="border-t border-border/30 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Astar. Todos los derechos reservados.</p>
-          <p className="text-xs text-muted-foreground">Pagos seguros con Stripe y Mercado Pago</p>
+          <p className="text-xs text-muted-foreground">Pagos seguros con PayPal y Mercado Pago</p>
         </div>
       </div>
     </footer>

@@ -1,19 +1,23 @@
 import { motion } from "framer-motion";
 import { Loader2, ShoppingBag, ShoppingCart, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortalExtrasCart } from "@/contexts/PortalExtrasCartContext";
 import {
   paymentConfirmMercadoPagoPayment,
   paymentConfirmPayPalOrder,
-  paymentCreateExtrasCartCheckout,
+  paymentProcessMercadoPagoCard,
   portalGetMyOrders,
   type PortalOrder,
 } from "@/lib/api";
 import { getExtraServiceById, priceUsdForService } from "@/lib/extraServicesCatalog";
 import EmptyState from "@/components/EmptyState";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/sonner";
+import { PayPalExtrasCartButton, PayPalScriptHost } from "@/components/payments/PayPalEmbedded";
+
+const MercadoPagoCardBrick = lazy(() => import("@/components/payments/MercadoPagoCardBrick"));
 
 function formatDate(iso: string) {
   try {
@@ -44,13 +48,14 @@ const listCardClass =
   "rounded-2xl border border-border/50 bg-card/40 overflow-hidden divide-y divide-border/30";
 
 const MyOrders = () => {
-  const { hasActiveSubscription } = useAuth();
+  const { hasActiveSubscription, user } = useAuth();
   const { cartServiceIds, toggleInCart, reloadSelections, selectionsReady } = usePortalExtrasCart();
   const [searchParams, setSearchParams] = useSearchParams();
   const [orders, setOrders] = useState<PortalOrder[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
-  const [checkoutLoading, setCheckoutLoading] = useState<"mercadopago" | "paypal" | null>(null);
   const [payNote, setPayNote] = useState<string | null>(null);
+  const [mpDialogOpen, setMpDialogOpen] = useState(false);
+  const [mpDialogError, setMpDialogError] = useState<string | null>(null);
 
   const loadOrders = useCallback(() => {
     return portalGetMyOrders().then((data) => setOrders(data.orders));
@@ -72,6 +77,8 @@ const MyOrders = () => {
   }, [cartServiceIds, hasActiveSubscription]);
 
   const totalUsd = useMemo(() => cartLines.reduce((s, l) => s + l.usd, 0), [cartLines]);
+  const totalArs = useMemo(() => cartLines.reduce((s, l) => s + Math.round(l.usd * 1450), 0), [cartLines]);
+  const mercadoPagoPublicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY ?? "";
 
   const paymentStatus = searchParams.get("status");
   const paymentProvider = searchParams.get("provider");
@@ -141,26 +148,6 @@ const MyOrders = () => {
     reloadSelections,
     setSearchParams,
   ]);
-
-  const handleCheckout = async (provider: "mercadopago" | "paypal") => {
-    if (cartLines.length === 0) return;
-    setCheckoutLoading(provider);
-    try {
-      const res = await paymentCreateExtrasCartCheckout({ provider });
-      if (res.checkoutUrl) {
-        window.location.assign(res.checkoutUrl);
-        return;
-      }
-      throw new Error("El servidor no devolvió una URL de pago.");
-    } catch (e) {
-      toast.error("No se pudo iniciar el pago", {
-        description: e instanceof Error ? e.message : undefined,
-        position: "top-right",
-      });
-    } finally {
-      setCheckoutLoading(null);
-    }
-  };
 
   const loading = ordersLoading || !selectionsReady;
   const hasCart = cartLines.length > 0;
@@ -244,35 +231,35 @@ const MyOrders = () => {
               <p className="text-[11px] text-muted-foreground leading-snug">
                 Mercado Pago cobra en ARS (cotización aproximada como en el catálogo). PayPal cobra en USD.
               </p>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col sm:flex-row gap-3 items-stretch">
                 <button
                   type="button"
-                  disabled={checkoutLoading !== null}
-                  className="flex-1 rounded-xl border border-primary/40 bg-primary/15 px-4 py-3 text-sm font-medium text-primary hover:bg-primary/25 transition-colors disabled:opacity-50"
-                  onClick={() => void handleCheckout("mercadopago")}
+                  className="flex-1 rounded-xl border border-primary/40 bg-primary/15 px-4 py-3 text-sm font-medium text-primary hover:bg-primary/25 transition-colors self-center sm:self-stretch h-[46px]"
+                  onClick={() => {
+                    setMpDialogError(null);
+                    setMpDialogOpen(true);
+                  }}
                 >
-                  {checkoutLoading === "mercadopago" ? (
-                    <span className="inline-flex items-center justify-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" /> Redirigiendo…
-                    </span>
-                  ) : (
-                    "Pagar con Mercado Pago"
-                  )}
+                  Pagar con Mercado Pago
                 </button>
-                <button
-                  type="button"
-                  disabled={checkoutLoading !== null}
-                  className="flex-1 rounded-xl border border-border/60 bg-card/60 px-4 py-3 text-sm font-medium text-foreground hover:bg-accent/40 transition-colors disabled:opacity-50"
-                  onClick={() => void handleCheckout("paypal")}
-                >
-                  {checkoutLoading === "paypal" ? (
-                    <span className="inline-flex items-center justify-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" /> Redirigiendo…
-                    </span>
-                  ) : (
-                    "Pagar con PayPal"
-                  )}
-                </button>
+                <div className="flex-1 min-w-0 flex flex-col gap-1 justify-center">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">PayPal (USD)</p>
+                  <PayPalScriptHost>
+                    <PayPalExtrasCartButton
+                      onSuccess={async () => {
+                        await reloadSelections();
+                        await loadOrders();
+                        setPayNote("Pago confirmado. Gracias por tu compra.");
+                        toast.success("Pago confirmado", { position: "top-right" });
+                      }}
+                      onError={(msg) => {
+                        if (msg) {
+                          toast.error("PayPal", { description: msg, position: "top-right" });
+                        }
+                      }}
+                    />
+                  </PayPalScriptHost>
+                </div>
               </div>
             </div>
           </div>
@@ -319,6 +306,70 @@ const MyOrders = () => {
           Los pagos completados aparecerán en <span className="text-foreground/90">Pagos registrados</span>.
         </p>
       )}
+
+      <Dialog
+        open={mpDialogOpen}
+        onOpenChange={(open) => {
+          setMpDialogOpen(open);
+          if (!open) setMpDialogError(null);
+        }}
+      >
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 overflow-x-hidden border-border/50 bg-card/95 backdrop-blur-xl">
+          <div className="p-5 border-b border-border/40">
+            <DialogHeader>
+              <DialogTitle>Pago con tarjeta — Mercado Pago</DialogTitle>
+              <DialogDescription>
+                Total en ARS (mismo criterio que el backend). Completá el formulario sin salir del portal.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="p-5 space-y-3">
+            {mpDialogError && <p className="text-sm text-destructive">{mpDialogError}</p>}
+            <p className="text-sm text-muted-foreground">
+              Total:{" "}
+              <span className="font-semibold text-foreground tabular-nums">{totalArs.toLocaleString("es-AR")} ARS</span>
+            </p>
+            <Suspense
+              fallback={
+                <div className="flex justify-center py-10">
+                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                </div>
+              }
+            >
+              <MercadoPagoCardBrick
+                publicKey={mercadoPagoPublicKey}
+                amount={totalArs}
+                payerEmailDefault={user?.email ?? ""}
+                idSuffix="extras_cart"
+                onProcessPayment={async (fd) => {
+                  await paymentProcessMercadoPagoCard({
+                    flow: "extras_cart",
+                    token: fd.token,
+                    issuerId: fd.issuer_id,
+                    paymentMethodId: fd.payment_method_id,
+                    installments: fd.installments,
+                    transactionAmount: fd.transaction_amount,
+                    payerEmail: fd.payer?.email?.trim() || user?.email?.trim() || "",
+                    payerIdentification: fd.payer?.identification,
+                  });
+                }}
+                onSuccess={async () => {
+                  setMpDialogOpen(false);
+                  setMpDialogError(null);
+                  await reloadSelections();
+                  await loadOrders();
+                  setPayNote("Pago confirmado. Gracias por tu compra.");
+                  toast.success("Pago confirmado", { position: "top-right" });
+                }}
+                onError={(message) => {
+                  if (message) setMpDialogError(message);
+                  else setMpDialogError(null);
+                }}
+              />
+            </Suspense>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

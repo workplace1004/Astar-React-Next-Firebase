@@ -3,7 +3,7 @@ import LandingSubscribeSectionLink from "@/components/landing/LandingSubscribeSe
 import { UserPlus, CreditCard, LayoutDashboard, MessageCircle, HelpCircle } from "lucide-react";
 
 const steps = [
-  { icon: CreditCard, step: 1, title: "Suscríbete", desc: "Elige tu plan y completa el pago de forma segura con Stripe o Mercado Pago." },
+  { icon: CreditCard, step: 1, title: "Suscríbete", desc: "Elige tu plan y completa el pago de forma segura con PayPal o Mercado Pago." },
   { icon: UserPlus, step: 2, title: "Crea tu cuenta", desc: "Registra tus datos personales y tu información de nacimiento (fecha, hora y lugar)." },
   { icon: LayoutDashboard, step: 3, title: "Accede a tu portal", desc: "Ingresa a tu espacio personal donde encontrarás tu carta natal, revolución solar y numerología." },
   { icon: MessageCircle, step: 4, title: "Recibe tu mensaje mensual", desc: "Cada mes recibes una lectura personalizada basada en los tránsitos que afectan tu carta natal." },

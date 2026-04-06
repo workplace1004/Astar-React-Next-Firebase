@@ -18,4 +18,8 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Avoid dev 504 "Outdated Optimize Dep" after adding/changing heavy deps (e.g. Mercado Pago).
+  optimizeDeps: {
+    include: ["@mercadopago/sdk-react", "@paypal/react-paypal-js"],
+  },
 }));

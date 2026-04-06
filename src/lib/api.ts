@@ -585,20 +585,15 @@ export interface PortalNotification {
 }
 
 export interface CheckoutResponse {
-  provider: "stripe" | "mercadopago" | "paypal";
+  provider: "mercadopago" | "paypal";
   checkoutUrl: string;
   reference: string;
-  mode?: "custom";
-  stripeClientSecret?: string;
-  stripePublishableKey?: string;
-  stripePaymentIntentId?: string;
 }
 
 export async function paymentCreateSubscriptionCheckout(input: {
-  provider: "stripe" | "mercadopago";
+  provider: "mercadopago" | "paypal";
   plan: "essentials" | "portal" | "depth";
   billing: "monthly" | "annual";
-  embedded?: boolean;
 }): Promise<CheckoutResponse> {
   const res = await fetch(`${API_BASE}/payments/subscription/checkout`, {
     method: "POST",
@@ -611,7 +606,7 @@ export async function paymentCreateSubscriptionCheckout(input: {
 }
 
 export async function paymentCreateExtraCheckout(input: {
-  provider: "stripe" | "mercadopago";
+  provider: "mercadopago";
   extraType: "extra_question" | "private_session";
   quantity?: number;
 }): Promise<CheckoutResponse> {
@@ -638,26 +633,30 @@ export async function paymentCreateExtrasCartCheckout(input: {
   return data as CheckoutResponse;
 }
 
-export async function paymentConfirmStripeSession(sessionId: string): Promise<{ ok: boolean }> {
-  const res = await fetch(`${API_BASE}/payments/confirm/stripe`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify({ sessionId }),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data as { message?: string }).message ?? "No se pudo confirmar el pago de Stripe");
-  return data as { ok: boolean };
+export interface ProcessMercadoPagoCardInput {
+  flow: "subscription" | "extras_cart";
+  plan?: "essentials" | "portal" | "depth";
+  billing?: "monthly" | "annual";
+  token: string;
+  issuerId?: string;
+  paymentMethodId: string;
+  installments: number;
+  transactionAmount: number;
+  payerEmail: string;
+  payerIdentification?: { type: string; number: string };
 }
 
-export async function paymentConfirmStripeIntent(paymentIntentId: string): Promise<{ ok: boolean }> {
-  const res = await fetch(`${API_BASE}/payments/confirm/stripe-intent`, {
+export async function paymentProcessMercadoPagoCard(
+  input: ProcessMercadoPagoCardInput,
+): Promise<{ ok: boolean; paymentId?: string; paymentKind?: string; subscriptionStatus?: string }> {
+  const res = await fetch(`${API_BASE}/payments/mercadopago/card`, {
     method: "POST",
     headers: authHeaders(),
-    body: JSON.stringify({ paymentIntentId }),
+    body: JSON.stringify(input),
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data as { message?: string }).message ?? "No se pudo confirmar el pago de Stripe");
-  return data as { ok: boolean };
+  if (!res.ok) throw new Error((data as { message?: string }).message ?? "No se pudo procesar el pago");
+  return data as { ok: boolean; paymentId?: string; paymentKind?: string; subscriptionStatus?: string };
 }
 
 export async function paymentConfirmMercadoPagoPayment(paymentId: string): Promise<{ ok: boolean }> {
