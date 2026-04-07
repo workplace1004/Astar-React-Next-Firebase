@@ -393,7 +393,7 @@ const ExtraServices = () => {
           <ExtraServiceCard
             key={s.id}
             service={s}
-            cardImage={`/extra/${cardIndex + 1}.png`}
+            cardImage={`/extra/${cardIndex + 1}.jpg`}
             hasActiveSubscription={hasActiveSubscription}
             arsPerUsd={arsPerUsd}
           />
