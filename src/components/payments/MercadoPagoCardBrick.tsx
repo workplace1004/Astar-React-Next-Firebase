@@ -101,8 +101,14 @@ export default function MercadoPagoCardBrick({
           }
         }}
         onError={(err) => {
-          const text = [err.message, err.cause].filter(Boolean).join(" ") || "Error en el formulario de pago.";
-          onError(text);
+          const raw = [err.message, err.cause].filter(Boolean).join(" ") || "Error en el formulario de pago.";
+          if (raw.includes("secure_fields_card_token_creation_failed")) {
+            onError(
+              "Mercado Pago no pudo crear el token de la tarjeta. Revisá que VITE_MERCADOPAGO_PUBLIC_KEY sea la clave pública de la misma aplicación que MERCADOPAGO_ACCESS_TOKEN del backend, que el sitio esté en URLs permitidas en el panel de MP, y probá sin bloqueadores.",
+            );
+            return;
+          }
+          onError(raw);
         }}
       />
     </div>
