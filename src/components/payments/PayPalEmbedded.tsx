@@ -104,7 +104,7 @@ export function PayPalExtrasCartButton({
   }
 
   return (
-    <div className="w-full min-h-[46px] [&_.paypal-buttons]:w-full">
+    <div className="w-full min-h-[46px] [&_.paypal-buttons]:w-full rounded-xl">
       <PayPalButtons
         disabled={Boolean(disabled)}
         style={{ layout: "vertical", shape: "rect", label: "pay", height: 42, borderRadius: 10 }}

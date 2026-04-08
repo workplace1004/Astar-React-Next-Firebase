@@ -243,7 +243,6 @@ const MyOrders = () => {
                   Pagar con Mercado Pago
                 </button>
                 <div className="flex-1 min-w-0 flex flex-col gap-1 justify-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">PayPal (USD)</p>
                   <PayPalScriptHost>
                     <PayPalExtrasCartButton
                       onSuccess={async () => {
