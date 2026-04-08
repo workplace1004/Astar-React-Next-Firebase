@@ -40,7 +40,13 @@ export default function MercadoPagoCardBrick({
   useEffect(() => {
     if (!publicKey) return;
     try {
-      initMercadoPago(publicKey, { locale: "es-AR" });
+      // siteId MLA = Argentina (ARS). Without it, secure fields often fail with
+      // secure_fields_card_token_creation_failed for ARS checkouts.
+      initMercadoPago(publicKey, {
+        locale: "es-AR",
+        siteId: "MLA",
+        advancedFraudPrevention: true,
+      });
       setSdkReady(true);
     } catch {
       onErrorRef.current("No se pudo inicializar Mercado Pago.");
@@ -64,13 +70,15 @@ export default function MercadoPagoCardBrick({
     );
   }
 
+  const amountArs = Math.round(Number(amount));
+
   return (
     <div className="min-h-[280px] mp-card-brick text-foreground">
       <CardPayment
         id={`cardPaymentBrick_${idSuffix}`}
-        key={`${idSuffix}-${amount}-${payerEmailDefault}`}
+        key={`${idSuffix}-${amountArs}-${payerEmailDefault}`}
         initialization={{
-          amount,
+          amount: amountArs,
           payer: payerEmailDefault ? { email: payerEmailDefault } : undefined,
         }}
         locale="es-AR"
