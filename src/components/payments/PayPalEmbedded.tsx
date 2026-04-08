@@ -10,6 +10,7 @@ const paypalOptions = () => ({
   clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID ?? "",
   currency: "USD",
   intent: "capture" as const,
+  disableFunding: ["paylater", "card", "credit"],
 });
 
 /** Wraps PayPal Smart Buttons. Required ancestor for PayPalButtons. */
