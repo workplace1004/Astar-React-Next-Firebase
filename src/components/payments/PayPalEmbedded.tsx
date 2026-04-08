@@ -47,7 +47,7 @@ export function PayPalSubscriptionButton({
   }
 
   return (
-    <div className="w-full min-h-[46px] [&_.paypal-buttons]:w-full">
+    <div className="w-full min-h-[46px] overflow-hidden rounded-[10px] [&_.paypal-buttons]:w-full [&_.paypal-buttons]:bg-transparent [&_iframe]:block [&_iframe]:rounded-[10px]">
       <PayPalButtons
         disabled={Boolean(disabled)}
         style={{ layout: "vertical", shape: "rect", label: "pay", height: 42, borderRadius: 10 }}
@@ -104,7 +104,7 @@ export function PayPalExtrasCartButton({
   }
 
   return (
-    <div className="w-full min-h-[46px] [&_.paypal-buttons]:w-full rounded-xl">
+    <div className="w-full min-h-[46px] overflow-hidden rounded-[10px] [&_.paypal-buttons]:w-full [&_.paypal-buttons]:bg-transparent [&_iframe]:block [&_iframe]:rounded-[10px]">
       <PayPalButtons
         disabled={Boolean(disabled)}
         style={{ layout: "vertical", shape: "rect", label: "pay", height: 42, borderRadius: 10 }}
