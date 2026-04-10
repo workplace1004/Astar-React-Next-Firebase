@@ -101,6 +101,11 @@ export const EXTRA_SERVICES: ServiceItem[] = [
 
 const byId = new Map(EXTRA_SERVICES.map((s) => [s.id, s]));
 
+/** Imagen del catálogo: `/extra/1.jpg` … según el orden en `EXTRA_SERVICES` (misma regla que el portal). */
+export function extraServiceImageSrcByCatalogIndex(index: number): string {
+  return `/extra/${index + 1}.jpg`;
+}
+
 export function getExtraServiceById(id: string): ServiceItem | undefined {
   return byId.get(id);
 }

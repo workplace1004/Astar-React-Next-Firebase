@@ -7,7 +7,11 @@ import { SansNumeralsInherit, SerifWithSansNumerals } from "@/components/SerifWi
 import { fetchUsdArsRate, paymentConfirmMercadoPagoPayment } from "@/lib/api";
 import { toast } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
-import { EXTRA_SERVICES as SERVICES, type ServiceItem } from "@/lib/extraServicesCatalog";
+import {
+  EXTRA_SERVICES as SERVICES,
+  extraServiceImageSrcByCatalogIndex,
+  type ServiceItem,
+} from "@/lib/extraServicesCatalog";
 
 /** Si el backend no tiene clave o la API falla, hasta que cargue otra cosa. */
 const FALLBACK_ARS_PER_USD = 1450;
@@ -393,7 +397,7 @@ const ExtraServices = () => {
           <ExtraServiceCard
             key={s.id}
             service={s}
-            cardImage={`/extra/${cardIndex + 1}.jpg`}
+            cardImage={extraServiceImageSrcByCatalogIndex(cardIndex)}
             hasActiveSubscription={hasActiveSubscription}
             arsPerUsd={arsPerUsd}
           />
