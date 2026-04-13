@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, logout, isAuthenticated, isAdmin, authLoading } = useAuth();
+  const { login, isAuthenticated, isAdmin, authLoading } = useAuth();
   const { resolvedTheme } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
@@ -29,11 +29,6 @@ const Login = () => {
     try {
       const result = await login(email, password);
       if (result.success) {
-        if (result.role === "admin") {
-          await logout();
-          setError("Para acceder al panel de administración, usa la página de inicio de sesión de administrador.");
-          return;
-        }
         navigate("/portal");
       } else {
         const errMsg = "errorMessage" in result ? result.errorMessage : undefined;

@@ -3,7 +3,21 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePortalNotifications } from "@/contexts/PortalNotificationsContext";
 import { PortalNotificationsProvider } from "@/contexts/PortalNotificationsContext";
 import { PortalExtrasCartProvider, usePortalExtrasCart } from "@/contexts/PortalExtrasCartContext";
-import { LayoutDashboard, FileText, MessageCircle, HelpCircle, Package, ShoppingBag, ShoppingCart, CreditCard, LogOut, Menu, Bell, User } from "lucide-react";
+import {
+  LayoutDashboard,
+  FileText,
+  MessageCircle,
+  HelpCircle,
+  Package,
+  ShoppingBag,
+  ShoppingCart,
+  CreditCard,
+  LogOut,
+  Menu,
+  Bell,
+  User,
+  Shield,
+} from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "next-themes";
 import ThemeToggle from "@/components/landing/ThemeToggle";
@@ -117,7 +131,9 @@ const PortalLayoutContent = () => {
         <button className="flex items-center gap-3 pl-4 border-l border-border/30 hover:opacity-80 transition-opacity cursor-pointer">
           <div className="text-right">
             <p className="text-sm font-medium text-foreground">{user?.name}</p>
-            <p className="text-xs text-muted-foreground">Suscriptor</p>
+            <p className="text-xs text-muted-foreground">
+              {user?.role === "admin" ? "Administrador" : "Suscriptor"}
+            </p>
           </div>
           <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-sm font-semibold overflow-hidden">
             {user?.avatarUrl ? (
@@ -221,6 +237,16 @@ const PortalLayoutContent = () => {
               {item.label}
             </NavLink>
           ))}
+          {user?.role === "admin" && (
+            <Link
+              to="/admin"
+              onClick={() => setSidebarOpen(false)}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 border border-dashed border-border/50"
+            >
+              <Shield className="w-4 h-4" />
+              Panel administración
+            </Link>
+          )}
         </nav>
       </aside>
 
@@ -301,7 +327,7 @@ const PortalLayout = () => {
     return <LoadingSpinner />;
   }
 
-  if (!isAuthenticated || user?.role === "admin") {
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
@@ -309,7 +335,8 @@ const PortalLayout = () => {
     location.pathname === "/portal/subscription" ||
     location.pathname === "/portal/extra-services" ||
     location.pathname === "/portal/orders";
-  if (!hasActiveSubscription && !allowedWithoutSubscription) {
+  const adminBypassSubscription = user?.role === "admin";
+  if (!hasActiveSubscription && !allowedWithoutSubscription && !adminBypassSubscription) {
     return <Navigate to="/portal/subscription" replace />;
   }
 
