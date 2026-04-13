@@ -15,6 +15,9 @@ import { cn } from "@/lib/utils";
 interface CitySuggestion {
   id: string;
   label: string;
+  lat: number;
+  lon: number;
+  timezone?: string;
 }
 
 const Register = () => {
@@ -67,7 +70,13 @@ const Register = () => {
           .map((item, index) => {
             const label = `${item.name}${item.admin1 ? `, ${item.admin1}` : ""}, ${item.country}`;
             const id = `${label}-${item.latitude ?? "na"}-${item.longitude ?? "na"}-${index}`;
-            return { id, label };
+            return {
+              id,
+              label,
+              lat: typeof item.latitude === "number" ? item.latitude : NaN,
+              lon: typeof item.longitude === "number" ? item.longitude : NaN,
+              timezone: (item as unknown as { timezone?: string }).timezone,
+            };
           });
         setCitySuggestions(mapped);
       } catch {
@@ -94,8 +103,17 @@ const Register = () => {
       setError("Indica tu fecha de nacimiento.");
       return;
     }
-    if (!form.birthPlace.trim() || !selectedCityId) {
+    const selectedCity = citySuggestions.find((c) => c.id === selectedCityId) ?? null;
+    if (!form.birthPlace.trim() || !selectedCityId || !selectedCity) {
       setError("Selecciona tu ciudad desde la lista de sugerencias.");
+      return;
+    }
+    if (!Number.isFinite(selectedCity.lat) || !Number.isFinite(selectedCity.lon)) {
+      setError("No se pudo obtener coordenadas de la ciudad. Elige otra ciudad sugerida.");
+      return;
+    }
+    if (!selectedCity.timezone) {
+      setError("No se pudo obtener zona horaria de la ciudad. Elige otra ciudad sugerida.");
       return;
     }
     setLoading(true);
@@ -107,6 +125,9 @@ const Register = () => {
         birthDate: form.birthDate.trim(),
         birthPlace: form.birthPlace.trim(),
         birthTime: form.birthTime.trim() || "00:00",
+        birthLat: selectedCity.lat,
+        birthLon: selectedCity.lon,
+        birthTimezone: selectedCity.timezone,
       };
       const timeoutPromise = new Promise<{ ok: false; error: string }>((_, reject) =>
         setTimeout(() => reject(new Error("timeout")), REGISTER_TIMEOUT_MS)

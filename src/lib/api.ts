@@ -10,6 +10,12 @@ export interface ApiUser {
   isActive: boolean;
   subscriptionStatus: "active" | "inactive" | "cancelled";
   avatarUrl?: string | null;
+  birthDate?: string | null;
+  birthPlace?: string | null;
+  birthTime?: string | null;
+  birthLat?: number | null;
+  birthLon?: number | null;
+  birthTimezone?: string | null;
 }
 
 export async function apiLogin(email: string, password: string): Promise<{ user: ApiUser; access_token: string }> {
@@ -32,6 +38,9 @@ export async function apiRegister(data: {
   birthDate: string;
   birthPlace: string;
   birthTime: string;
+  birthLat: number;
+  birthLon: number;
+  birthTimezone: string;
 }): Promise<{ user: ApiUser; access_token: string }> {
   const res = await fetch(`${API_BASE}/auth/register`, {
     method: "POST",
@@ -107,7 +116,17 @@ export async function apiBirthChartPreview(data: {
   return body as BirthChartPreviewResult;
 }
 
-export async function apiUpdateProfile(data: { name?: string; email?: string; birthDate?: string; birthPlace?: string; birthTime?: string; avatarUrl?: string }): Promise<ApiUser> {
+export async function apiUpdateProfile(data: {
+  name?: string;
+  email?: string;
+  birthDate?: string;
+  birthPlace?: string;
+  birthTime?: string;
+  birthLat?: number;
+  birthLon?: number;
+  birthTimezone?: string;
+  avatarUrl?: string;
+}): Promise<ApiUser> {
   const res = await fetch(`${API_BASE}/auth/me`, {
     method: "PATCH",
     headers: authHeaders(),

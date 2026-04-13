@@ -30,6 +30,19 @@ const BirthChart = () => {
   );
   const sections = interpretation.sections;
 
+  const chartUrlFromReport = useMemo(() => {
+    if (!report?.content) return null;
+    try {
+      const parsed = JSON.parse(report.content) as { provider?: string; chartUrl?: string };
+      if (parsed?.provider !== "astroapi" || typeof parsed.chartUrl !== "string" || !parsed.chartUrl.trim()) {
+        return null;
+      }
+      return parsed.chartUrl.trim();
+    } catch {
+      return null;
+    }
+  }, [report?.content]);
+
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto flex items-center justify-center py-20">
@@ -62,17 +75,27 @@ const BirthChart = () => {
 
 
       {/* Chart visualization */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="glass-card rounded-2xl p-10 premium-shadow mb-8 flex items-center justify-center">
-        <div className="w-64 h-64 rounded-full border-2 border-primary/30 flex items-center justify-center relative">
-          <div className="w-48 h-48 rounded-full border border-border/50 flex items-center justify-center">
-            <div className="w-32 h-32 rounded-full border border-border/30 flex items-center justify-center">
-              <span className="font-serif text-2xl text-primary">☉ ♏</span>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="glass-card rounded-2xl p-6 md:p-10 premium-shadow mb-8 flex items-center justify-center overflow-hidden">
+        {chartUrlFromReport ? (
+          <img
+            src={chartUrlFromReport}
+            alt="Carta natal"
+            className="max-w-full h-auto max-h-[min(85vh,720px)] object-contain"
+          />
+        ) : (
+          <div className="w-64 h-64 rounded-full border-2 border-primary/30 flex items-center justify-center relative">
+            <div className="w-48 h-48 rounded-full border border-border/50 flex items-center justify-center">
+              <div className="w-32 h-32 rounded-full border border-border/30 flex items-center justify-center">
+                <span className="font-serif text-2xl text-primary">☉ ♏</span>
+              </div>
             </div>
+            {["♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓"].map((s, i) => (
+              <span key={i} className="absolute text-xs text-muted-foreground" style={{ transform: `rotate(${i * 30}deg) translateY(-140px) rotate(-${i * 30}deg)` }}>
+                {s}
+              </span>
+            ))}
           </div>
-          {["♈","♉","♊","♋","♌","♍","♎","♏","♐","♑","♒","♓"].map((s, i) => (
-            <span key={i} className="absolute text-xs text-muted-foreground" style={{ transform: `rotate(${i * 30}deg) translateY(-140px) rotate(-${i * 30}deg)` }}>{s}</span>
-          ))}
-        </div>
+        )}
       </motion.div>
 
       {/* Birth info cards */}
