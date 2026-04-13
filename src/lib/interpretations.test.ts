@@ -14,7 +14,7 @@ function makeReport(content: string | null): PortalReport {
 }
 
 describe("buildPortalInterpretation", () => {
-  it("normalizes sections from JSON array and applies Astar copy", () => {
+  it("normalizes sections from JSON array and keeps vendor text by default (portal)", () => {
     const report = makeReport(
       JSON.stringify({
         sections: [{ id: "s1", title: "Sol", content: "Siempre debes confiar en tu luz." }],
@@ -24,16 +24,32 @@ describe("buildPortalInterpretation", () => {
     const result = buildPortalInterpretation(report, { reportType: "birth_chart", defaultSectionTitle: "Interpretación" });
 
     expect(result.sections).toHaveLength(1);
+    expect(result.sections[0].source).toBe("vendor");
+    expect(result.sections[0].content).toBe("Siempre debes confiar en tu luz.");
+  });
+
+  it("applies Astar copy only when useAstarCopy is true", () => {
+    const report = makeReport(
+      JSON.stringify({
+        sections: [{ id: "s1", title: "Sol", content: "Siempre debes confiar en tu luz." }],
+      }),
+    );
+    const result = buildPortalInterpretation(report, {
+      reportType: "birth_chart",
+      defaultSectionTitle: "Interpretación",
+      useAstarCopy: true,
+    });
+
+    expect(result.sections).toHaveLength(1);
     expect(result.sections[0].source).toBe("astar");
     expect(result.sections[0].content).toContain("con frecuencia");
     expect(result.sections[0].content).toContain("puedes");
   });
 
-  it("keeps vendor text when Astar copy is disabled", () => {
+  it("keeps vendor text for plain string content", () => {
     const report = makeReport("Texto del proveedor");
     const result = buildPortalInterpretation(report, {
       reportType: "solar_return",
-      useAstarCopy: false,
       defaultSectionTitle: "Interpretación",
     });
 
@@ -68,6 +84,7 @@ describe("buildPortalInterpretation", () => {
     const result = buildPortalInterpretation(report, {
       reportType: "birth_chart",
       styleConfig: customStyleConfig,
+      useAstarCopy: true,
     });
     expect(result.sections[0].content).toContain("Intro personalizada.");
     expect(result.sections[0].content).toContain("Cierre para sol.");

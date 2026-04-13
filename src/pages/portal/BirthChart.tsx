@@ -119,16 +119,11 @@ const BirthChart = () => {
       {sections.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass-card rounded-2xl p-6 premium-shadow">
           <h3 className="font-serif text-xl text-foreground mb-4">Interpretación</h3>
-          {interpretation.usedVendorFallback && (
-            <p className="text-xs text-muted-foreground mb-4">
-              Se muestra la versión base del proveedor porque no se pudo componer texto Astar para este reporte.
-            </p>
-          )}
-          <div className="space-y-4">
+          <div className="space-y-4 font-sans">
             {sections.map((s) => (
               <div key={s.id} className="border-b border-border/30 last:border-0 pb-4 last:pb-0">
-                <p className="font-serif text-foreground mb-2">{s.title}</p>
-                <p className="text-muted-foreground leading-relaxed text-sm whitespace-pre-wrap">{s.content}</p>
+                <p className="font-sans text-foreground mb-2 tabular-nums">{s.title}</p>
+                <p className="font-sans text-muted-foreground leading-relaxed text-sm whitespace-pre-wrap tabular-nums">{s.content}</p>
               </div>
             ))}
           </div>

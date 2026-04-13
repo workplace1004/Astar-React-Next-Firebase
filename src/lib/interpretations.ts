@@ -195,7 +195,8 @@ export function buildPortalInterpretation(
   options: BuildInterpretationOptions,
 ): NormalizedInterpretation {
   const defaultSectionTitle = options.defaultSectionTitle ?? "Interpretación";
-  const useAstarCopy = options.useAstarCopy ?? USE_ASTAR_COPY;
+  // Portal reportes: solo texto almacenado del proveedor (p. ej. Astrology API). Sin plantillas Astar.
+  const useAstarCopy = options.useAstarCopy === true;
   const allowVendorFallback = options.allowVendorFallback ?? ALLOW_VENDOR_FALLBACK;
 
   if (!report || !report.content) {
