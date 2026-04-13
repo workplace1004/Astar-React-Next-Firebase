@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, isAuthenticated, isAdmin, authLoading } = useAuth();
+  const { login, isAuthenticated, authLoading } = useAuth();
   const { resolvedTheme } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
@@ -16,8 +16,9 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  /** Siempre portal cliente: esta ruta es el login del portal, también para administradores. */
   if (!authLoading && isAuthenticated) {
-    return <Navigate to={isAdmin ? "/admin" : "/portal"} replace />;
+    return <Navigate to="/portal" replace />;
   }
 
   const logoSrc = resolvedTheme === "light" ? "/3SIN%20FONDO/logosolofinal.png" : "/3SIN%20FONDO/logoblanco.png";
