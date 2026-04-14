@@ -19,6 +19,7 @@ import AdminLayout from "@/layouts/AdminLayout";
 // Lazy-loaded pages
 const Index = lazy(() => import("@/pages/Index"));
 const About = lazy(() => import("@/pages/About"));
+const ServiciosExtras = lazy(() => import("@/pages/ServiciosExtras"));
 const Blog = lazy(() => import("@/pages/Blog"));
 const BlogArticle = lazy(() => import("@/pages/BlogArticle"));
 const PortalPreviewPage = lazy(() => import("@/pages/PortalPreviewPage"));
@@ -80,6 +81,7 @@ const App = () => {
                   <Route path="/manifesto" element={<Navigate to="/about" replace />} />
                   <Route path="/how-it-works" element={<Navigate to="/about" replace />} />
                   <Route path="/about" element={<About />} />
+                  <Route path="/servicios-extras" element={<ServiciosExtras />} />
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/perspectivas" element={<Blog />} />
                   <Route path="/blog/:slug" element={<BlogArticle />} />

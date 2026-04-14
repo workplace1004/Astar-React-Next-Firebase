@@ -611,7 +611,7 @@ export interface CheckoutResponse {
 
 export async function paymentCreateSubscriptionCheckout(input: {
   provider: "mercadopago" | "paypal";
-  plan: "essentials" | "portal" | "depth";
+  plan: "portal";
   billing: "monthly" | "annual";
 }): Promise<CheckoutResponse> {
   const res = await fetch(`${API_BASE}/payments/subscription/checkout`, {
@@ -654,7 +654,7 @@ export async function paymentCreateExtrasCartCheckout(input: {
 
 export interface ProcessMercadoPagoCardInput {
   flow: "subscription" | "extras_cart";
-  plan?: "essentials" | "portal" | "depth";
+  plan?: "portal";
   billing?: "monthly" | "annual";
   token: string;
   issuerId?: string;

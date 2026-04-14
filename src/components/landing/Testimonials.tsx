@@ -73,7 +73,7 @@ const Testimonials = () => {
         >
           <p className="text-sm tracking-[0.3em] uppercase text-primary mb-4">Comentarios de nuestra comunidad</p>
           <h2 className="font-serif text-3xl md:text-5xl lg:text-6xl font-light mb-6">
-            Lo que dicen<br />
+            Los que ya<br />
             <span className="text-gradient-gold italic">quienes ya usan Astar</span>
           </h2>
         </motion.div>

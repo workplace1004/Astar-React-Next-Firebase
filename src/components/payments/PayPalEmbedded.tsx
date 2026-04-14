@@ -36,7 +36,7 @@ export function PayPalSubscriptionButton({
   onSuccess,
   onError,
 }: {
-  plan: "essentials" | "portal" | "depth";
+  plan: "portal";
   billing: "monthly" | "annual";
   disabled?: boolean;
   onSuccess: () => void | Promise<void>;

@@ -26,38 +26,49 @@ function LandingExtraServiceImage({ catalogIndex, title }: { catalogIndex: numbe
   );
 }
 
+type ExtraServicesLandingSectionProps = {
+  className?: string;
+  /** When true, only the catalog grid and CTAs (for the public `/servicios-extras` page hero). */
+  omitHeader?: boolean;
+};
+
 /**
  * Vista resumida del catálogo de servicios extras (misma fuente que /portal/extra-services).
- * En la home va encima de «Conecta tus patrones» (CarlosBioSection).
  */
-const ExtraServicesLandingSection = ({ className }: { className?: string }) => {
+const ExtraServicesLandingSection = ({ className, omitHeader = false }: ExtraServicesLandingSectionProps) => {
   return (
     <section
-      id="servicios-extras"
-      className={cn("relative py-24 md:py-28 px-6 border-y border-border/30 scroll-mt-24", className)}
+      id={omitHeader ? undefined : "servicios-extras"}
+      className={cn(
+        "relative py-24 md:py-28 px-6 border-y border-border/30 scroll-mt-24",
+        omitHeader && "border-0 py-0 px-0 scroll-mt-0",
+        className
+      )}
     >
       <div className="absolute inset-0 section-glow pointer-events-none" />
       <div className="max-w-6xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.7 }}
-          className="max-w-3xl mb-12 md:mb-14"
-        >
-          <p className="text-sm tracking-[0.3em] uppercase text-primary mb-4 flex items-center gap-2">
-            <Package className="w-4 h-4 opacity-90" aria-hidden />
-            Servicios extras
-          </p>
-          <h2 className="font-serif text-3xl md:text-5xl font-light mb-5 leading-tight">
-            Consultas y sesiones{" "}
-            <span className="text-gradient-gold italic">con Carlos</span>
-          </h2>
-          <p className="text-muted-foreground text-base md:text-lg leading-relaxed">
-            Además del portal, podés sumar lecturas en vivo, informes escritos y audios personalizados. Los precios
-            en USD son orientativos; con suscripción activa aplican valores reducidos en el portal.
-          </p>
-        </motion.div>
+        {!omitHeader ? (
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.7 }}
+            className="max-w-3xl mb-12 md:mb-14"
+          >
+            <p className="text-sm tracking-[0.3em] uppercase text-primary mb-4 flex items-center gap-2">
+              <Package className="w-4 h-4 opacity-90" aria-hidden />
+              Servicios extras
+            </p>
+            <h2 className="font-serif text-3xl md:text-5xl font-light mb-5 leading-tight">
+              Consultas y sesiones{" "}
+              <span className="text-gradient-gold italic">con Carlos</span>
+            </h2>
+            <p className="text-muted-foreground text-base md:text-lg leading-relaxed">
+              Además del portal, podés sumar lecturas en vivo, informes escritos y audios personalizados. Los precios
+              en USD son orientativos; con suscripción activa aplican valores reducidos en el portal.
+            </p>
+          </motion.div>
+        ) : null}
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
           {EXTRA_SERVICES.map((s, index) => (

@@ -39,16 +39,16 @@ const PortalPreview = () => {
           transition={{ duration: 0.8 }}
           className="text-center mb-14 md:mb-16"
         >
-          <p className="text-sm tracking-[0.3em] uppercase text-primary mb-4">Explora y crece</p>
+          <p className="text-sm tracking-[0.3em] uppercase text-primary mb-4">Descubre lo que hay dentro</p>
           <h2 className="font-serif text-3xl md:text-5xl lg:text-6xl font-light mb-6">
-            Echa un vistazo a tu{" "}
-            <span className="text-gradient-gold italic">portal</span>
+            Astar en{" "}
+            <span className="text-gradient-gold italic">dos minutos</span>
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto text-base md:text-lg leading-relaxed">
+          {/* <p className="text-muted-foreground max-w-2xl mx-auto text-base md:text-lg leading-relaxed">
             Además de tu carta astral completa y todos tus informes e interpretaciones, también podrás recibir un
             análisis personalizado con Carlos Bersano cada mes para interpretar cualquier aspecto de tu vida,
             dependiendo del plan de acceso que elijas.
-          </p>
+          </p> */}
         </motion.div>
 
         <motion.div
@@ -58,9 +58,9 @@ const PortalPreview = () => {
           transition={{ duration: 0.65 }}
           className="mb-14"
         >
-          <p className="text-center text-sm uppercase tracking-widest text-muted-foreground mb-4">
+          {/* <p className="text-center text-sm uppercase tracking-widest text-muted-foreground mb-4">
             Descubre lo que hay dentro
-          </p>
+          </p> */}
           <div
             className="relative w-full max-w-4xl mx-auto aspect-video rounded-2xl border-2 border-dashed border-primary/35 bg-background/50 flex items-center justify-center px-6 premium-shadow"
             aria-label="Espacio para vídeo del portal"
@@ -69,6 +69,9 @@ const PortalPreview = () => {
               Insertar vídeo aquí
             </p>
           </div>
+          <p className="text-muted-foreground text-center text-sm mt-4">
+            Carlos te explica qué es Astar y cómo funciona el portal
+          </p>
         </motion.div>
 
         <motion.div

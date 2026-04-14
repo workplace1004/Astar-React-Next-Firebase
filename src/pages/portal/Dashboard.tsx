@@ -23,9 +23,9 @@ function subscriptionTextFromOrder(order: PortalOrder | null) {
   const plan = (parts[1] ?? "").toLowerCase();
   const billing = (parts[2] ?? "").toLowerCase();
   const planMap: Record<string, string> = {
-    essentials: "Essentials",
+    essentials: "Essentials (gratis)",
     portal: "Portal",
-    depth: "Depth",
+    depth: "Portal (plan anterior)",
   };
   const billingMap: Record<string, string> = {
     monthly: "Mensual",

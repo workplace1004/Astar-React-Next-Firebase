@@ -8,6 +8,7 @@ import ThemeToggle from "./ThemeToggle";
 
 const navLinks: Array<{ to: string; label: string; hash?: string }> = [
   { to: "/", label: "Inicio", hash: "#inicio" },
+  { to: "/servicios-extras", label: "Servicios extras" },
   { to: "/about", label: "Acerca" },
   { to: "/blog", label: "Perspectivas" },
 ];

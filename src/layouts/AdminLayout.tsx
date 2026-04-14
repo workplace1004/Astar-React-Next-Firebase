@@ -1,4 +1,5 @@
 import { Outlet, Navigate, NavLink, Link, useNavigate, useLocation } from "react-router-dom";
+import { useIdleLogout } from "@/hooks/useIdleLogout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminNotifications } from "@/contexts/AdminNotificationsContext";
 import { AdminNotificationsProvider } from "@/contexts/AdminNotificationsContext";
@@ -226,7 +227,17 @@ const AdminLayoutContent = () => {
 };
 
 const AdminLayout = () => {
-  const { isAuthenticated, isAdmin, authLoading } = useAuth();
+  const { isAuthenticated, isAdmin, authLoading, logout } = useAuth();
+  const navigate = useNavigate();
+
+  useIdleLogout({
+    enabled: !authLoading && isAuthenticated && isAdmin,
+    ms: 10 * 60 * 1000,
+    onIdle: async () => {
+      await logout();
+      navigate("/", { replace: true });
+    },
+  });
 
   if (authLoading) {
     return <LoadingSpinner />;

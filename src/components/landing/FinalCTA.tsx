@@ -16,12 +16,11 @@ const FinalCTA = () => {
           transition={{ duration: 0.8 }}
         >
           <h2 className="font-serif text-3xl md:text-5xl lg:text-6xl font-light leading-[1.15] mb-8">
-            Dejá de repetir.{" "}
-            <span className="text-gradient-gold italic">Empezá a entender</span>
+            Empezá a entender{" "}<br />
+            <span className="text-gradient-gold italic">lo que te está pasando</span>
           </h2>
           <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto mb-10 leading-relaxed">
-            Una plataforma personalizada que conecta tu carta astral y todos tus documentos con tu vida real para que
-            puedas ver qué está pasando, por qué ocurre y qué hacer a continuación.
+            No es adivinación. Es autoconocimiento con herramientas simbólicas y acompañamiento real.
           </p>
 
           <motion.div

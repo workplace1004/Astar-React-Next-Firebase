@@ -9,6 +9,7 @@ import {
   paymentProcessMercadoPagoCard,
   portalGetMyOrders,
   portalGetProfile,
+  fetchUsdArsRate,
   type PortalOrder,
   type PortalProfile,
 } from "@/lib/api";
@@ -19,11 +20,14 @@ import { PayPalScriptHost, PayPalSubscriptionButton } from "@/components/payment
 
 const MercadoPagoCardBrick = lazy(() => import("@/components/payments/MercadoPagoCardBrick"));
 
-/** Mismos importes que `SUBSCRIPTION_CATALOG.portal` en el backend (ARS debe coincidir). */
-const PORTAL_PRICE_USD = { monthly: 29, annual: 228 } as const;
-const PORTAL_PRICE_ARS = { monthly: 42050, annual: 330600 } as const;
-/** Solo para mostrar “/ mes” en pago anual (equivalente mensual). */
-const PORTAL_DISPLAY_ANNUAL_PER_MONTH = "19";
+/** USD del plan Portal: mismos valores que `PORTAL_SUBSCRIPTION_USD` en el backend. ARS vía `fetchUsdArsRate`. */
+const PORTAL_USD_MONTHLY = 29;
+const PORTAL_PRICE_USD = {
+  monthly: PORTAL_USD_MONTHLY,
+  annual: Math.round(PORTAL_USD_MONTHLY * 12 * 0.8),
+} as const;
+/** Equivalente mensual en pago anual (−20 %), sin decimales. */
+const PORTAL_DISPLAY_ANNUAL_PER_MONTH = String(Math.round(PORTAL_USD_MONTHLY * 0.8));
 
 const ESSENTIALS_FEATURES = [
   "Carta astral de nacimiento",
@@ -68,12 +72,12 @@ function planLabelFromType(type: string) {
     "subscription:essentials:annual": "Essentials",
     "subscription:portal:monthly": "Portal completo",
     "subscription:portal:annual": "Portal completo",
-    "subscription:depth:monthly": "Depth",
-    "subscription:depth:annual": "Depth",
+    "subscription:depth:monthly": "Portal completo (plan anterior)",
+    "subscription:depth:annual": "Portal completo (plan anterior)",
   };
   const lower = type?.toLowerCase() ?? "";
   if (labels[lower]) return labels[lower];
-  if (lower.includes("depth")) return "Depth";
+  if (lower.includes("depth")) return "Portal completo (plan anterior)";
   if (lower.includes("portal")) return "Portal completo";
   if (lower.includes("essentials")) return "Essentials";
   return labels[lower] ?? type ?? "Plan";
@@ -103,6 +107,28 @@ const Subscription = () => {
   const [actionError, setActionError] = useState<string | null>(null);
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [arsPerUsd, setArsPerUsd] = useState<number | null>(null);
+  const [arsRateError, setArsRateError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchUsdArsRate()
+      .then((r) => {
+        if (!cancelled) {
+          setArsPerUsd(r.arsPerUsd);
+          setArsRateError(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setArsPerUsd(null);
+          setArsRateError("No se pudo obtener la cotización USD→ARS. Reintentá en unos segundos.");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     Promise.all([portalGetProfile(), portalGetMyOrders()]).then(([p, o]) => {
@@ -224,7 +250,11 @@ const Subscription = () => {
     setActionMessage("Pago confirmado. Tu suscripción está activa.");
   };
 
-  const portalArsAmount = PORTAL_PRICE_ARS[billing];
+  const portalArsAmount = useMemo(() => {
+    if (arsPerUsd == null || !Number.isFinite(arsPerUsd)) return 0;
+    const usd = billing === "monthly" ? PORTAL_PRICE_USD.monthly : PORTAL_PRICE_USD.annual;
+    return Math.round(usd * arsPerUsd);
+  }, [arsPerUsd, billing]);
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -377,7 +407,9 @@ const Subscription = () => {
             </div>
             {billing === "annual" && (
               <p className="text-xs text-muted-foreground mb-2">
-                Facturación anual: USD {PORTAL_PRICE_USD.annual.toLocaleString("es-AR")} (equiv. {PORTAL_DISPLAY_ANNUAL_PER_MONTH} USD/mes).
+                Facturación anual: USD{" "}
+                {PORTAL_PRICE_USD.annual.toLocaleString("es-AR", { maximumFractionDigits: 0 })} (equiv.{" "}
+                {PORTAL_DISPLAY_ANNUAL_PER_MONTH} USD/mes).
               </p>
             )}
             <p className="text-sm text-muted-foreground mb-6">
@@ -396,10 +428,12 @@ const Subscription = () => {
                 <button
                   type="button"
                   onClick={openMercadoPagoModal}
-                  className="w-full py-3 rounded-full bg-accent border border-border/50 text-foreground font-medium text-sm hover:bg-accent/80 transition-colors"
+                  disabled={Boolean(arsRateError) || arsPerUsd == null}
+                  className="w-full py-3 rounded-full bg-accent border border-border/50 text-foreground font-medium text-sm hover:bg-accent/80 transition-colors disabled:opacity-50 disabled:pointer-events-none"
                 >
                   Pagar con Mercado Pago (ARS)
                 </button>
+                {arsRateError ? <p className="text-[10px] text-destructive mt-1">{arsRateError}</p> : null}
               </div>
             </PayPalScriptHost>
 
@@ -463,7 +497,11 @@ const Subscription = () => {
               <p className="text-sm text-muted-foreground">
                 Total a pagar:{" "}
                 <span className="font-semibold text-foreground tabular-nums">
-                  {portalArsAmount.toLocaleString("es-AR")} ARS
+                  {portalArsAmount > 0
+                    ? `${portalArsAmount.toLocaleString("es-AR")} ARS`
+                    : arsRateError
+                      ? "—"
+                      : "Cargando cotización…"}
                 </span>
                 {billing === "annual" && (
                   <span className="block text-xs mt-1">Pago anual (plan Portal completo).</span>
@@ -476,6 +514,7 @@ const Subscription = () => {
                   </div>
                 }
               >
+                {portalArsAmount > 0 ? (
                 <MercadoPagoCardBrick
                   publicKey={mercadoPagoPublicKey}
                   amount={portalArsAmount}
@@ -506,6 +545,13 @@ const Subscription = () => {
                   }}
                   onError={(message) => setActionError(message || null)}
                 />
+                ) : arsRateError ? (
+                  <p className="text-sm text-destructive py-4 text-center">{arsRateError}</p>
+                ) : (
+                  <div className="flex justify-center py-10">
+                    <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                  </div>
+                )}
               </Suspense>
             </div>
           </div>

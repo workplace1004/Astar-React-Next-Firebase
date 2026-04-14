@@ -1,6 +1,5 @@
 import Navbar from "@/components/landing/Navbar";
 import HeroSection from "@/components/landing/HeroSection";
-import ExtraServicesLandingSection from "@/components/landing/ExtraServicesLandingSection";
 import CarlosBioSection from "@/components/landing/CarlosBioSection";
 import WhoIsThisFor from "@/components/landing/WhoIsThisFor";
 import PortalPreview from "@/components/landing/PortalPreview";
@@ -21,7 +20,6 @@ const Index = () => {
       <div className="relative z-10">
         <Navbar />
         <HeroSection />
-        <ExtraServicesLandingSection />
         <CarlosBioSection variant="landing" id="experiencia" />
         <WhoIsThisFor />
         <PortalPreview />

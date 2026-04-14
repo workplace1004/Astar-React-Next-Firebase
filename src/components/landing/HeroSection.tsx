@@ -39,8 +39,8 @@ const HeroSection = () => {
           transition={{ duration: 0.7, delay: 0.35 }}
           className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 mb-8 text-xs sm:text-sm tracking-[0.2em] uppercase text-primary"
         >
-          <span>Perspectivas simbólicas</span>
-          <span className="hidden sm:inline text-border">·</span>
+          <span>Tu portal de lectura que evoluciona con vos</span>
+          {/* <span className="hidden sm:inline text-border">·</span>
           <a
             href={`#${LANDING_SUBSCRIBE_SECTION_ID}`}
             onClick={(e) => {
@@ -50,17 +50,17 @@ const HeroSection = () => {
             className="hover:text-foreground transition-colors underline-offset-4 hover:underline cursor-pointer"
           >
             Consulta con un asesor
-          </a>
+          </a> */}
         </motion.div>
 
-        <motion.p
+        {/* <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.5 }}
           className="text-sm tracking-[0.25em] uppercase text-muted-foreground mb-6"
         >
           Tu portal de lectura que evoluciona contigo
-        </motion.p>
+        </motion.p> */}
 
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
@@ -68,9 +68,19 @@ const HeroSection = () => {
           transition={{ duration: 1, delay: 0.65 }}
           className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light leading-[1.2] mb-8 max-w-3xl mx-auto"
         >
-          Astar escucha tu historia e interpreta tus decisiones y tus{" "}
-          <span className="text-gradient-gold font-medium italic">perspectivas astrológicas</span>{" "}
-          con esmero, orientación experta y claridad.
+          Tu propio espacio para encontrarle {" "}<br />
+          <span className="text-gradient-gold font-medium italic">sentido a lo que vivís.</span>{" "}
+        <div className="mt-6 mb-2 flex flex-col items-center justify-center">
+          <p className="text-base md:text-lg text-muted-foreground mb-1">
+            Porque entender lo que te pasa<br className="hidden md:block" />
+            cambia todo lo que decidís después.
+          </p>
+          <p className="text-sm md:text-base text-muted-foreground/70 mt-5">
+            Con astrología, numerología, tarot y una persona real <br/>
+            del otro lado.
+          </p>
+        </div>
+   
         </motion.h1>
 
         <motion.div

@@ -6,9 +6,9 @@ import { useState } from "react";
 import { LANDING_SUBSCRIBE_SECTION_ID } from "@/lib/landingAnchors";
 import { useAuth } from "@/contexts/AuthContext";
 
-/** Sustituir cuando definas precio público (p. ej. desde env o API). */
+/** Alineado con el plan Portal en backend (29 USD/mes; anual −20 %, equivalente mensual sin decimales). */
 const PORTAL_PRICE_MONTHLY = "29";
-const PORTAL_PRICE_ANNUAL_PER_MONTH = "19";
+const PORTAL_PRICE_ANNUAL_PER_MONTH = String(Math.round(29 * 0.8));
 
 const PricingSection = () => {
   const { isAuthenticated } = useAuth();

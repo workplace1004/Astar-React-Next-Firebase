@@ -1,4 +1,5 @@
 import { Outlet, Navigate, NavLink, Link, useNavigate, useLocation } from "react-router-dom";
+import { useIdleLogout } from "@/hooks/useIdleLogout";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortalNotifications } from "@/contexts/PortalNotificationsContext";
 import { PortalNotificationsProvider } from "@/contexts/PortalNotificationsContext";
@@ -320,8 +321,18 @@ const PortalLayoutContent = () => {
 };
 
 const PortalLayout = () => {
-  const { user, isAuthenticated, authLoading, hasActiveSubscription } = useAuth();
+  const { user, isAuthenticated, authLoading, hasActiveSubscription, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  useIdleLogout({
+    enabled: !authLoading && isAuthenticated && Boolean(user),
+    ms: 10 * 60 * 1000,
+    onIdle: async () => {
+      await logout();
+      navigate("/", { replace: true });
+    },
+  });
 
   if (authLoading) {
     return <LoadingSpinner />;
