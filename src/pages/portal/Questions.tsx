@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Send, HelpCircle, Package, Loader2, MessageCircle, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { portalSubmitQuestion, portalGetMyQuestions, type PortalQuestionItem } from "@/lib/api";
@@ -17,10 +17,10 @@ const Questions = () => {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [remaining] = useState(1);
   const [myQuestions, setMyQuestions] = useState<PortalQuestionItem[]>([]);
   const [loadingQuestions, setLoadingQuestions] = useState(true);
   const maxChars = 500;
+  const monthlyLimit = 1;
 
   useEffect(() => {
     refetchQuestions();
@@ -32,6 +32,16 @@ const Questions = () => {
       .then(setMyQuestions)
       .finally(() => setLoadingQuestions(false));
   };
+
+  const remaining = useMemo(() => {
+    const now = new Date();
+    const usedThisMonth = myQuestions.filter((q) => {
+      const d = new Date(q.createdAt);
+      if (Number.isNaN(d.getTime())) return false;
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    }).length;
+    return Math.max(0, monthlyLimit - usedThisMonth);
+  }, [myQuestions]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
