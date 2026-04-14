@@ -3,6 +3,17 @@ import { useState, useEffect, useMemo } from "react";
 import { Send, HelpCircle, Package, Loader2, MessageCircle, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { portalSubmitQuestion, portalGetMyQuestions, type PortalQuestionItem } from "@/lib/api";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 function formatDate(iso: string) {
   try {
@@ -17,10 +28,21 @@ const Questions = () => {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [limitModalOpen, setLimitModalOpen] = useState(false);
+  const [messagePacksModalOpen, setMessagePacksModalOpen] = useState(false);
   const [myQuestions, setMyQuestions] = useState<PortalQuestionItem[]>([]);
   const [loadingQuestions, setLoadingQuestions] = useState(true);
   const maxChars = 500;
-  const monthlyLimit = 1;
+  const remaining = useMemo(() => {
+    const monthStartUtc = new Date();
+    monthStartUtc.setUTCDate(1);
+    monthStartUtc.setUTCHours(0, 0, 0, 0);
+    const askedThisMonth = myQuestions.some((q) => {
+      const createdAt = new Date(q.createdAt);
+      return Number.isFinite(createdAt.getTime()) && createdAt >= monthStartUtc;
+    });
+    return askedThisMonth ? 0 : 1;
+  }, [myQuestions]);
 
   useEffect(() => {
     refetchQuestions();
@@ -32,16 +54,6 @@ const Questions = () => {
       .then(setMyQuestions)
       .finally(() => setLoadingQuestions(false));
   };
-
-  const remaining = useMemo(() => {
-    const now = new Date();
-    const usedThisMonth = myQuestions.filter((q) => {
-      const d = new Date(q.createdAt);
-      if (Number.isNaN(d.getTime())) return false;
-      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-    }).length;
-    return Math.max(0, monthlyLimit - usedThisMonth);
-  }, [myQuestions]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +72,35 @@ const Questions = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const messagePacks = [
+    {
+      id: "pack-1",
+      title: "1 mensaje",
+      totalUsd: 2,
+      discountPct: 0,
+      description: "Compra individual para enviar un mensaje adicional.",
+    },
+    {
+      id: "pack-5",
+      title: "5 mensajes",
+      totalUsd: 8,
+      discountPct: 20,
+      description: "Incluye reducción del 20% sobre el precio base.",
+    },
+    {
+      id: "pack-10",
+      title: "10 mensajes",
+      totalUsd: 12,
+      discountPct: 40,
+      description: "Incluye reducción del 40% para mayor ahorro.",
+    },
+  ] as const;
+
+  const openMessagePacksModal = () => {
+    setLimitModalOpen(false);
+    setMessagePacksModalOpen(true);
   };
 
   return (
@@ -137,14 +178,24 @@ const Questions = () => {
       ) : (
         <motion.form onSubmit={handleSubmit} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card max-h-[350px] rounded-2xl p-10 premium-shadow">
           <label className="text-xs tracking-widest uppercase text-muted-foreground mb-3 block">Tu Pregunta</label>
-          <textarea
-            value={question}
-            onChange={(e) => e.target.value.length <= maxChars && setQuestion(e.target.value)}
-            placeholder="Escribe tu pregunta aquí. Sé específico para recibir una respuesta más precisa..."
-            rows={6}
-            className="w-full px-4 py-3 rounded-xl bg-background/50 border border-border/50 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all text-sm resize-none mb-2"
-            disabled={remaining === 0}
-          />
+          <div className="relative mb-2">
+            <textarea
+              value={question}
+              onChange={(e) => e.target.value.length <= maxChars && setQuestion(e.target.value)}
+              placeholder="Escribe tu pregunta aquí. Sé específico para recibir una respuesta más precisa..."
+              rows={6}
+              className="w-full px-4 py-3 rounded-xl bg-background/50 border border-border/50 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all text-sm resize-none"
+              disabled={remaining === 0}
+            />
+            {remaining === 0 ? (
+              <button
+                type="button"
+                onClick={() => setLimitModalOpen(true)}
+                className="absolute inset-0 z-10 rounded-xl bg-transparent"
+                aria-label="Open monthly question limit message"
+              />
+            ) : null}
+          </div>
           <div className="flex justify-between items-center mb-4">
             <span className="text-xs text-muted-foreground">{question.length}/{maxChars} caracteres</span>
           </div>
@@ -157,6 +208,73 @@ const Questions = () => {
           </button>
         </motion.form>
       )}
+
+      <AlertDialog open={limitModalOpen} onOpenChange={setLimitModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Límite mensual alcanzado</AlertDialogTitle>
+            <AlertDialogDescription>
+              Solo puedes enviar un mensaje una vez al mes.
+              <br />
+              Haz clic{" "}
+              <button
+                type="button"
+                onClick={openMessagePacksModal}
+                className="text-primary underline underline-offset-4 hover:text-primary/80"
+              >
+                aquí
+              </button>{" "}
+              para enviar un mensaje adicional.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cerrar</AlertDialogCancel>
+            <AlertDialogAction onClick={openMessagePacksModal}>Ir a servicios extras</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={messagePacksModalOpen} onOpenChange={setMessagePacksModalOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Mensajes adicionales</DialogTitle>
+            <DialogDescription>
+              Elige un paquete para enviar mensajes extra.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 md:grid-cols-3">
+            {messagePacks.map((pack) => (
+              <div key={pack.id} className="rounded-xl border border-border/60 bg-card/40 p-5 flex flex-col">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="font-semibold text-foreground">{pack.title}</div>
+                  {pack.discountPct > 0 ? (
+                    <span className="text-[10px] px-2 py-1 rounded-full bg-primary/15 text-primary font-semibold">
+                      {pack.discountPct}% OFF
+                    </span>
+                  ) : null}
+                </div>
+                <p className="text-3xl font-light text-gradient-gold mb-2">${pack.totalUsd}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-5">{pack.description}</p>
+                <Link
+                  to="/portal/extra-services"
+                  className="mt-auto inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                >
+                  Seleccionar
+                </Link>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={() => setMessagePacksModalOpen(false)}
+              className="inline-flex items-center justify-center rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-accent"
+            >
+              Cerrar
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
