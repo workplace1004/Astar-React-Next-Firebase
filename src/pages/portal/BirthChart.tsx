@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
 import { portalGetReportByType, portalGetProfile } from "@/lib/api";
 import { format, parse } from "date-fns";
+import { es } from "date-fns/locale";
 import EmptyState from "@/components/EmptyState";
 import { buildPortalInterpretation } from "@/lib/interpretations";
 
@@ -63,7 +64,15 @@ const BirthChart = () => {
     );
   }
 
-  const birthDateFormatted = profile?.birthDate ? (() => { try { return format(parse(profile.birthDate, "yyyy-MM-dd", new Date()), "d 'de' MMMM, yyyy"); } catch { return profile.birthDate; } })() : "—";
+  const birthDateFormatted = profile?.birthDate
+    ? (() => {
+        try {
+          return format(parse(profile.birthDate, "yyyy-MM-dd", new Date()), "d 'de' MMMM, yyyy", { locale: es });
+        } catch {
+          return profile.birthDate;
+        }
+      })()
+    : "—";
   const birthTimeFormatted = profile?.birthTime ? `${profile.birthTime} hs` : "—";
   const birthPlaceFormatted = profile?.birthPlace || "—";
 
@@ -109,7 +118,7 @@ const BirthChart = () => {
             <info.icon className="w-5 h-5 text-primary shrink-0" />
             <div>
               <p className="text-xs text-muted-foreground">{info.label}</p>
-              <p className="text-sm text-foreground font-medium">{info.value}</p>
+              <p className="text-sm text-foreground font-medium font-sans tabular-nums">{info.value}</p>
             </div>
           </div>
         ))}
